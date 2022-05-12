@@ -11,14 +11,14 @@ import {
 import { chordString, eventToKeyChord, isModifier } from "keys";
 
 interface Settings {
-	disableDefaultShortcuts: boolean;
+	disableDefaultHotkeys: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
-	disableDefaultShortcuts: false,
+	disableDefaultHotkeys: false,
 };
 
-export default class SequenceShortcutsPlugin extends Plugin {
+export default class SequenceHotkeysPlugin extends Plugin {
 	settings: Settings;
 	statusBar: HTMLElement;
 
@@ -69,9 +69,9 @@ interface CommandSetting {
 }
 
 class SettingTab extends PluginSettingTab {
-	plugin: SequenceShortcutsPlugin;
+	plugin: SequenceHotkeysPlugin;
 
-	constructor(app: App, plugin: SequenceShortcutsPlugin) {
+	constructor(app: App, plugin: SequenceHotkeysPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -154,13 +154,13 @@ class SettingTab extends PluginSettingTab {
 		});
 		// TODO: Add settings as the features get supported
 		// new Setting(containerEl)
-		// 	.setName("Disable all default shortcuts")
-		// 	.setDesc("Only use the shortcuts defined in this plugin")
+		// 	.setName("Disable all default hotkeys")
+		// 	.setDesc("Only use the hotkeys defined in this plugin")
 		// 	.addToggle((toggle) =>
 		// 		toggle
-		// 			.setValue(this.plugin.settings.disableDefaultShortcuts)
+		// 			.setValue(this.plugin.settings.disableDefaultHotkeys)
 		// 			.onChange(async (value: boolean) => {
-		// 				this.plugin.settings.disableDefaultShortcuts = value;
+		// 				this.plugin.settings.disableDefaultHotkeys = value;
 		// 				await this.plugin.saveSettings();
 		// 			})
 		// 	);
