@@ -2,9 +2,17 @@ import { Modifier } from "obsidian";
 
 const CODE_CHAR_MAP = new Map<string, string>([
 	["Control", "⌃"],
+	["ControlLeft", "⌃"],
+	["ControlRight", "⌃"],
 	["Alt", "⌥"],
+	["AltLeft", "⌥"],
+	["AltRight", "⌥"],
 	["Shift", "⇧"],
+	["ShiftLeft", "⇧"],
+	["ShiftRight", "⇧"],
 	["Meta", "⌘"],
+	["MetaLeft", "⌘"],
+	["MetaRight", "⌘"],
 	["KeyA", "A"],
 	["KeyB", "B"],
 	["KeyC", "C"],
@@ -41,6 +49,22 @@ const CODE_CHAR_MAP = new Map<string, string>([
 	["Digit7", "7"],
 	["Digit8", "8"],
 	["Digit9", "9"],
+	["Minus", "-"],
+	["Equal", "="],
+	["Escape", "Esc"],
+	["BracketLeft", "["],
+	["BracketRight", "]"],
+	["Semicolon", ";"],
+	["Quote", "'"],
+	["Comma", ","],
+	["Period", "."],
+	["Slash", "/"],
+	["ArrowLeft", "Left"],
+	["ArrowRight", "Right"],
+	["ArrowUp", "Up"],
+	["ArrowDown", "Down"],
+	["Backquote", "`"],
+	["CapsLock", "⇪"],
 ]);
 
 export interface KeyChord {
@@ -76,6 +100,14 @@ export const isModifier = (key: string): boolean => {
 		case "Alt":
 		case "Shift":
 		case "Meta":
+		case "ControlLeft":
+		case "AltLeft":
+		case "ShiftLeft":
+		case "MetaLeft":
+		case "ControlRight":
+		case "AltRight":
+		case "ShiftRight":
+		case "MetaRight":
 			return true;
 		default:
 			return false;
