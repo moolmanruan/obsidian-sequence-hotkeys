@@ -67,32 +67,7 @@ const CODE_CHAR_MAP = new Map<string, string>([
 	["CapsLock", "⇪"],
 ]);
 
-export interface KeyChord {
-	modifiers: Array<string>;
-	key: string; // KeyboardEvent.code
-}
-
-export const eventToKeyChord = (e: KeyboardEvent): KeyChord => {
-	const modifiers = new Array<string>();
-	// Follow same ordering of modifiers as the default Obsidian Hotkeys
-	if (e.metaKey) {
-		modifiers.push("Meta");
-	}
-	if (e.ctrlKey) {
-		modifiers.push("Control");
-	}
-	if (e.altKey) {
-		modifiers.push("Alt");
-	}
-	if (e.shiftKey) {
-		modifiers.push("Shift");
-	}
-	return { modifiers, key: e.code };
-};
-
-const codeChar = (e: string): string => {
-	return CODE_CHAR_MAP.get(e) || e;
-};
+const codeToChar = (e: string): string => CODE_CHAR_MAP.get(e) || e;
 
 export const isModifier = (key: string): boolean => {
 	switch (key) {
@@ -114,9 +89,75 @@ export const isModifier = (key: string): boolean => {
 	}
 };
 
-export const chordString = (c: KeyChord): string => {
-	const keys = new Array<string>();
-	c.modifiers.map((m) => keys.push(codeChar(m.toString())));
-	keys.push(codeChar(c.key));
-	return keys.join("");
-};
+export class KeyChord {
+	meta: boolean;
+	ctrl: boolean;
+	alt: boolean;
+	shift: boolean;
+	key: string; // KeyboardEvent.code
+
+	constructor(input: KeyboardEvent | string) {
+		if (input instanceof KeyboardEvent) {
+			this.key = input.code;
+			this.meta = input.metaKey;
+			this.ctrl = input.ctrlKey;
+			this.alt = input.altKey;
+			this.shift = input.shiftKey;
+		} else {
+			const parts = input.split("-");
+			this.key = parts.pop();
+			parts.map((p) => {
+				switch (p) {
+					case "M":
+						this.meta = true;
+						break;
+					case "C":
+						this.ctrl = true;
+						break;
+					case "A":
+						this.alt = true;
+						break;
+					case "A":
+						this.shift = true;
+						break;
+				}
+			});
+		}
+	}
+
+	serialize = (): string => {
+		const parts = new Array<string>();
+		if (this.meta) {
+			parts.push("M");
+		}
+		if (this.ctrl) {
+			parts.push("C");
+		}
+		if (this.alt) {
+			parts.push("A");
+		}
+		if (this.shift) {
+			parts.push("S");
+		}
+		parts.push(codeToChar(this.key));
+		return parts.join("-");
+	};
+
+	toString = (): string => {
+		const keys = new Array<string>();
+		if (this.meta) {
+			keys.push("Meta");
+		}
+		if (this.ctrl) {
+			keys.push("Control");
+		}
+		if (this.alt) {
+			keys.push("Alt");
+		}
+		if (this.shift) {
+			keys.push("Shift");
+		}
+		keys.push(codeToChar(this.key));
+		return keys.map(codeToChar).join("");
+	};
+}

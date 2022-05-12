@@ -8,19 +8,58 @@ import {
 	Setting,
 } from "obsidian";
 
-import { chordString, eventToKeyChord, isModifier } from "keys";
+import { isModifier, KeyChord } from "keys";
+
+interface Hotkey {
+	command: string;
+	chords: KeyChord[];
+}
 
 interface Settings {
-	disableDefaultHotkeys: boolean;
+	hotkeys: Hotkey[];
 }
 
 const DEFAULT_SETTINGS: Settings = {
-	disableDefaultHotkeys: false,
+	hotkeys: Array<Hotkey>(),
 };
+
+interface HotkeyData {
+	// The command id
+	command: string;
+	// The serialized chords
+	chords: string[];
+}
+interface Data {
+	hotkeys: HotkeyData[];
+}
+
+const SerializeSettings = (settings: Settings): Data => {
+	return {
+		hotkeys: settings.hotkeys.map((h) => ({
+			command: h.command,
+			chords: h.chords.map((c) => c.serialize()),
+		})),
+	};
+};
+const DeserializeSettings = (data: Data): Settings => {
+	let settings = DEFAULT_SETTINGS;
+	if (data?.hotkeys) {
+		settings.hotkeys = data.hotkeys.map((h) => ({
+			command: h.command,
+			chords: h.chords.map((c) => new KeyChord(c)),
+		}));
+	}
+	return settings;
+};
+
+function allCommands(app: any): Command[] {
+	return Object.values((app as any).commands.commands);
+}
 
 export default class SequenceHotkeysPlugin extends Plugin {
 	settings: Settings;
 	statusBar: HTMLElement;
+	saveListener: ((s: Settings) => void) | undefined;
 
 	async onload() {
 		await this.loadSettings();
@@ -39,37 +78,151 @@ export default class SequenceHotkeysPlugin extends Plugin {
 	async loadSettings() {
 		this.settings = Object.assign(
 			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
+			DeserializeSettings(await this.loadData())
 		);
 	}
-
 	async saveSettings() {
-		await this.saveData(this.settings);
+		await this.saveData(SerializeSettings(this.settings));
+		this.saveListener?.(this.settings);
 	}
+	setSaveListener = (fn: (s: Settings) => void) => {
+		this.saveListener = fn;
+	};
 
 	keyDownHandler = (event: KeyboardEvent) => {
-		// event.preventDefault();
-		// event.stopPropagation();
 		if (isModifier(event.code)) {
 			return;
 		}
-		const chord = eventToKeyChord(event);
-		this.statusBar.setText(chordString(chord));
+		const chord = new KeyChord(event);
+		this.statusBar.setText(chord.toString());
+	};
+
+	_clearHotkey = (commandId: string) => {
+		this.settings.hotkeys = this.settings.hotkeys.filter(
+			(h: Hotkey) => h.command != commandId
+		);
+	};
+
+	addHotkey = (commandId: string, chords: KeyChord[]) => {
+		this._clearHotkey(commandId);
+		this.settings.hotkeys = [
+			...this.settings.hotkeys,
+			{
+				command: commandId,
+				chords,
+			},
+		];
+		this.saveSettings();
+	};
+
+	clearHotkey = (commandId: string) => {
+		this._clearHotkey(commandId);
+		this.saveSettings();
 	};
 }
 
-function appCommands(app: any): Command[] {
-	return Object.values((this.app as any).commands.commands);
-}
-
-interface CommandSetting {
+class CommandSetting extends Setting {
 	command: Command;
-	setting: Setting;
+	onCreated: ((id: string, chords: KeyChord[]) => void) | undefined;
+	onReset: ((id: string) => void) | undefined;
+
+	constructor(
+		containerEl: HTMLElement,
+		command: Command,
+		settings: Settings
+	) {
+		super(containerEl);
+		this.command = command;
+		this.render(settings);
+	}
+
+	getCommand = (): Command => this.command;
+
+	addOnCreated = (
+		fn: (id: string, chords: KeyChord[]) => void
+	): CommandSetting => {
+		this.onCreated = fn;
+		return this;
+	};
+
+	addOnReset = (fn: (id: string) => void): CommandSetting => {
+		this.onReset = fn;
+		return this;
+	};
+
+	render = (settings: Settings) => {
+		this.clear();
+
+		const hotkey = settings.hotkeys.find(
+			(h: Hotkey) => h.command === this.command.id
+		);
+
+		this.setName(this.command.name);
+		const hotkeyDiv = this.controlEl.createDiv({
+			cls: "setting-command-hotkeys",
+		});
+
+		const hotkeySpan = hotkeyDiv.createSpan({
+			text: "Blank",
+			cls: "setting-hotkey mod-empty",
+		});
+
+		if (hotkey) {
+			hotkeySpan.setText(
+				hotkey.chords.map((c) => c.toString()).join(" ")
+			);
+			// This button looks correct, but how do I add a tooltip?
+			const resetBtn = this.controlEl.createSpan({
+				cls: "setting-add-hotkey-button",
+			});
+			setIcon(resetBtn, "reset", 22);
+			resetBtn.onClickEvent(() => {
+				this.onReset?.(this.command.id);
+			});
+		}
+		// This button looks correct, but how do I add a tooltip?
+		const addBtn = this.controlEl.createSpan({
+			cls: "setting-add-hotkey-button",
+		});
+		setIcon(addBtn, "any-key", 22);
+
+		addBtn.onClickEvent(() => {
+			hotkeySpan.setText("Press hotkey...");
+			hotkeySpan.removeClass("mod-empty");
+			hotkeySpan.addClass("mod-active");
+
+			const chords = new Array<KeyChord>();
+			const handleKeydown = (event: KeyboardEvent) => {
+				if (isModifier(event.code)) {
+					return;
+				}
+				chords.push(new KeyChord(event));
+				hotkeySpan.setText(chords.map((c) => c.toString()).join(" "));
+			};
+
+			document.addEventListener("keydown", handleKeydown);
+			document.addEventListener(
+				"mousedown",
+				(e: MouseEvent) => {
+					document.removeEventListener("keydown", handleKeydown);
+
+					if (chords.length) {
+						this.onCreated?.(this.command.id, chords);
+					}
+
+					hotkeySpan.setText("Blank");
+					hotkeySpan.addClass("mod-empty");
+					hotkeySpan.removeClass("mod-active");
+				},
+				{ once: true } // Remove this listener after it is triggered
+			);
+		});
+	};
 }
 
 class SettingTab extends PluginSettingTab {
 	plugin: SequenceHotkeysPlugin;
+	chords: Array<KeyChord>;
 
 	constructor(app: App, plugin: SequenceHotkeysPlugin) {
 		super(app, plugin);
@@ -82,7 +235,6 @@ class SettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		let searchEl: SearchComponent;
-
 		new Setting(containerEl).addSearch((s: SearchComponent) => {
 			s.setPlaceholder("Filter...");
 			searchEl = s;
@@ -91,78 +243,32 @@ class SettingTab extends PluginSettingTab {
 		const commandsContainer = containerEl.createDiv();
 		const commandSettings = new Array<CommandSetting>();
 
-		appCommands(this.app).map((command: Command) => {
-			// let s = new Setting(containerEl)
-			// 	.setName(c.name)
-			// 	// How do I set the background colour of the button?
-			// 	.addButton((b: ButtonComponent) => {
-			// 		b.setButtonText("Press any key...");
-			// 	})
-			// 	// This button can have a tooltip, but how do I make it look like the span in default Hotkeys settings?
-			// 	.addExtraButton((b: ExtraButtonComponent) => {
-			// 		b.setIcon("any-key");
-			// 		b.setTooltip("Customize this command");
-			// 	});
-
-			const setting = new Setting(commandsContainer).setName(
-				command.name
+		allCommands(this.app).map((command: Command) => {
+			commandSettings.push(
+				new CommandSetting(
+					commandsContainer,
+					command,
+					this.plugin.settings
+				)
+					.addOnCreated(this.plugin.addHotkey)
+					.addOnReset(this.plugin.clearHotkey)
 			);
-			const hotkeyDiv = setting.controlEl.createDiv({
-				cls: "setting-command-hotkeys",
-			});
-			const keyBtn = hotkeyDiv.createSpan({
-				text: "Blank",
-				cls: "setting-hotkey mod-empty",
-			});
-			// This button looks correct, but how do I add a tooltip?
-			const resetBtn = setting.controlEl.createSpan({
-				cls: "setting-add-hotkey-button",
-			});
-			setIcon(resetBtn, "reset", 22);
-			// This button looks correct, but how do I add a tooltip?
-			const addBtn = setting.controlEl.createSpan({
-				cls: "setting-add-hotkey-button",
-			});
-			setIcon(addBtn, "any-key", 22);
-			addBtn.onClickEvent(() => {
-				if (keyBtn.hasClass("mod-empty")) {
-					keyBtn.removeClass("mod-empty");
-					keyBtn.addClass("mod-active");
+		});
 
-					keyBtn.setText("Press hotkey...");
-				} else {
-					keyBtn.removeClass("mod-active");
-					keyBtn.addClass("mod-empty");
-
-					keyBtn.setText("Blank");
-				}
-			});
-
-			commandSettings.push({ command, setting });
+		this.plugin.setSaveListener((s: Settings) => {
+			commandSettings.map((cs: CommandSetting) => cs.render(s));
 		});
 
 		// Hide/show the command settings based on the filter value.
 		searchEl.onChange((filterStr: string) => {
 			const filterParts = filterStr.toLowerCase().split(" ");
 			commandSettings.map((cs: CommandSetting) =>
-				cs.setting.settingEl.toggle(
+				cs.settingEl.toggle(
 					filterParts.every((part) =>
-						cs.command.name.toLowerCase().contains(part)
+						cs.getCommand().name.toLowerCase().contains(part)
 					)
 				)
 			);
 		});
-		// TODO: Add settings as the features get supported
-		// new Setting(containerEl)
-		// 	.setName("Disable all default hotkeys")
-		// 	.setDesc("Only use the hotkeys defined in this plugin")
-		// 	.addToggle((toggle) =>
-		// 		toggle
-		// 			.setValue(this.plugin.settings.disableDefaultHotkeys)
-		// 			.onChange(async (value: boolean) => {
-		// 				this.plugin.settings.disableDefaultHotkeys = value;
-		// 				await this.plugin.saveSettings();
-		// 			})
-		// 	);
 	}
 }
