@@ -97,13 +97,9 @@ export class KeyChord {
 	key: string; // KeyboardEvent.code
 
 	constructor(input: KeyboardEvent | string) {
-		if (input instanceof KeyboardEvent) {
-			this.key = input.code;
-			this.meta = input.metaKey;
-			this.ctrl = input.ctrlKey;
-			this.alt = input.altKey;
-			this.shift = input.shiftKey;
-		} else {
+		// If one checks `input instanceof KeyboardEvent` the jest tests fail
+		// with `ReferenceError: KeyboardEvent is not defined`.
+		if (typeof input === "string") {
 			const parts = input.split("-");
 			this.key = parts.pop();
 			parts.map((p) => {
@@ -117,11 +113,17 @@ export class KeyChord {
 					case "A":
 						this.alt = true;
 						break;
-					case "A":
+					case "S":
 						this.shift = true;
 						break;
 				}
 			});
+		} else {
+			this.key = input.code;
+			this.meta = input.metaKey;
+			this.ctrl = input.ctrlKey;
+			this.alt = input.altKey;
+			this.shift = input.shiftKey;
 		}
 	}
 
