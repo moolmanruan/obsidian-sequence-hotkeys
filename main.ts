@@ -8,7 +8,7 @@ import {
 	Setting,
 } from "obsidian";
 
-import { isEscape, isModifier, KeyChord } from "keys";
+import { isModifier, KeyChord } from "keys";
 import { HotkeyManager } from "hotkey-manager";
 
 interface Hotkey {
@@ -108,7 +108,7 @@ export default class SequenceHotkeysPlugin extends Plugin {
 	};
 
 	keyDownHandler = (event: KeyboardEvent) => {
-		if (isModifier(event.code)) {
+		if (!!(this.app as any).setting.activeTab || isModifier(event.code)) {
 			return;
 		}
 		const chord = new KeyChord(event);
