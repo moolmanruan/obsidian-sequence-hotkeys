@@ -9,6 +9,7 @@ import {
 } from "obsidian";
 
 import { isModifier, KeyChord } from "keys";
+import { HotkeyManager } from "hotkey-manager";
 
 interface Hotkey {
 	command: string;
@@ -60,8 +61,13 @@ export default class SequenceHotkeysPlugin extends Plugin {
 	settings: Settings;
 	statusBar: HTMLElement;
 	saveListener: ((s: Settings) => void) | undefined;
+	hotkeyManager: HotkeyManager;
 
 	async onload() {
+		this.hotkeyManager = new HotkeyManager((id: string) =>
+			(this.app as any).commands.executeCommandById(id)
+		);
+
 		await this.loadSettings();
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
@@ -75,16 +81,28 @@ export default class SequenceHotkeysPlugin extends Plugin {
 
 	onunload() {}
 
+	_settingsUpdated = () => {
+		this.saveSettings();
+
+		this.hotkeyManager.reset();
+		this.settings.hotkeys.map((h) =>
+			this.hotkeyManager.addHotkey(h.command, h.chords)
+		);
+		this.saveListener?.(this.settings);
+	};
+
 	async loadSettings() {
 		this.settings = Object.assign(
 			{},
 			DeserializeSettings(await this.loadData())
 		);
+		this._settingsUpdated();
 	}
+
 	async saveSettings() {
 		await this.saveData(SerializeSettings(this.settings));
-		this.saveListener?.(this.settings);
 	}
+
 	setSaveListener = (fn: (s: Settings) => void) => {
 		this.saveListener = fn;
 	};
@@ -95,6 +113,7 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		}
 		const chord = new KeyChord(event);
 		this.statusBar.setText(chord.toString());
+		this.hotkeyManager.handleChordPress(chord);
 	};
 
 	_clearHotkey = (commandId: string) => {
@@ -112,12 +131,12 @@ export default class SequenceHotkeysPlugin extends Plugin {
 				chords,
 			},
 		];
-		this.saveSettings();
+		this._settingsUpdated();
 	};
 
 	clearHotkey = (commandId: string) => {
 		this._clearHotkey(commandId);
-		this.saveSettings();
+		this._settingsUpdated();
 	};
 }
 
