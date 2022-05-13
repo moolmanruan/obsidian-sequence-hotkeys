@@ -113,7 +113,10 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		}
 		const chord = new KeyChord(event);
 		this.statusBar.setText(chord.toString());
-		this.hotkeyManager.handleChordPress(chord);
+		if (this.hotkeyManager.handleChordPress(chord)) {
+			// Prevent default if used
+			event.preventDefault();
+		}
 	};
 
 	_clearHotkey = (commandId: string) => {

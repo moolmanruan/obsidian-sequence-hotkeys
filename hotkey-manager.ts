@@ -31,7 +31,7 @@ export class HotkeyManager {
 		this.currentSequence = [];
 	}
 
-	handleChordPress = (chord: KeyChord) => {
+	handleChordPress = (chord: KeyChord): boolean => {
 		this.currentSequence.push(chord);
 
 		const css = this.currentSequence.map((c) => c.toString());
@@ -42,7 +42,7 @@ export class HotkeyManager {
 
 		if (hotkeys.length === 0) {
 			this.currentSequence = [];
-			return;
+			return false;
 		}
 
 		let exactMatch = hotkeys.find((r: Registration) => {
@@ -53,6 +53,7 @@ export class HotkeyManager {
 			this.currentSequence = [];
 			this.triggerHandler(hotkeys[0].id);
 		}
+		return true;
 	};
 
 	reset = () => {
