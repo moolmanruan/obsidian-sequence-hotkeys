@@ -55,6 +55,9 @@ export class HotkeyManager {
 		}
 	};
 
+	reset = () => {
+		this.registeredHotkeys = [];
+	};
 	addHotkey = (id: string, chords: KeyChord[]) => {
 		this.registeredHotkeys.push({ id, chords });
 	};

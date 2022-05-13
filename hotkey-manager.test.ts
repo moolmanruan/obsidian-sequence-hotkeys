@@ -56,4 +56,20 @@ describe("HotkeyManager", () => {
 		expect(fn).toBeCalledTimes(1);
 		expect(fn).toHaveBeenLastCalledWith("test-id");
 	});
+
+	test("reset removes registered hotkeys", () => {
+		let fn = jest.fn();
+		let man = new HotkeyManager(fn);
+		man.addHotkey("test-id", [new KeyChord("C-KeyQ")]);
+		man.addHotkey("test-another", [new KeyChord("C-KeyF")]);
+
+		man.handleChordPress(new KeyChord("C-KeyQ"));
+		man.handleChordPress(new KeyChord("C-KeyF"));
+		expect(fn).toBeCalledTimes(2);
+
+		man.reset();
+		man.handleChordPress(new KeyChord("C-KeyQ"));
+		man.handleChordPress(new KeyChord("C-KeyF"));
+		expect(fn).toBeCalledTimes(2); // same as before reset
+	});
 });
