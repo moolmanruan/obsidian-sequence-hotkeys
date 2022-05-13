@@ -8,7 +8,7 @@ You can modify your hotkeys under `Plugin Options > Sequence Hotkeys` or `Option
 
 You can use the search bar to filter the commands. Searches are done using space separated values separately, for example "ex co" will find a command with the description `Example Command` or `Copy Text`.
 
-To create a hotkey for a command click the set hotkey button on the right-hand side. The hotkey component will display "Press hotkey...". Type the shortcuts you want to use. To end the input click anywhere (except the set hotkey button).
+To create a hotkey for a command click the set hotkey button on the right-hand side. The hotkey component will display "Press hotkey...". Type the shortcuts you want to use and complete the input by clicking anywhere.
 
 # Known Issues
 
