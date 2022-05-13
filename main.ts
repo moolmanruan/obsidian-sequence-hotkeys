@@ -8,7 +8,7 @@ import {
 	Setting,
 } from "obsidian";
 
-import { isModifier, KeyChord } from "keys";
+import { isEscape, isModifier, KeyChord } from "keys";
 import { HotkeyManager } from "hotkey-manager";
 
 interface Hotkey {
@@ -210,28 +210,17 @@ class CommandSetting extends Setting {
 			hotkeySpan.removeClass("mod-empty");
 			hotkeySpan.addClass("mod-active");
 
-			const chords = new Array<KeyChord>();
-			const handleKeydown = (event: KeyboardEvent) => {
-				if (isModifier(event.code)) {
-					return;
-				}
-				chords.push(new KeyChord(event));
+			const onUpdate = (chords: KeyChord[]) => {
 				hotkeySpan.setText(chords.map((c) => c.toString()).join(" "));
 			};
-
-			document.addEventListener("keydown", handleKeydown);
+			const stopCapture = captureChord(onUpdate);
 			document.addEventListener(
 				"mousedown",
 				(e: MouseEvent) => {
-					document.removeEventListener("keydown", handleKeydown);
-
+					const chords = stopCapture();
 					if (chords.length) {
 						this.onCreated?.(this.command.id, chords);
 					}
-
-					hotkeySpan.setText("Blank");
-					hotkeySpan.addClass("mod-empty");
-					hotkeySpan.removeClass("mod-active");
 				},
 				{ once: true } // Remove this listener after it is triggered
 			);
@@ -301,4 +290,26 @@ class SettingTab extends PluginSettingTab {
 		// Focus on the search input
 		searchEl.inputEl.focus();
 	}
+}
+
+function captureChord(cb: (cs: KeyChord[]) => void): () => KeyChord[] {
+	let chords = new Array<KeyChord>();
+
+	const handleKeydown = (event: KeyboardEvent) => {
+		event.preventDefault();
+		event.stopPropagation();
+		if (isEscape(event)) {
+			document.removeEventListener("keydown", handleKeydown);
+		}
+		if (isModifier(event.code)) {
+			return;
+		}
+		chords.push(new KeyChord(event));
+		cb(chords);
+	};
+	document.addEventListener("keydown", handleKeydown);
+	return (): KeyChord[] => {
+		document.removeEventListener("keydown", handleKeydown);
+		return chords;
+	};
 }
