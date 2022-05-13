@@ -242,11 +242,30 @@ class CommandSetting extends Setting {
 class SettingTab extends PluginSettingTab {
 	plugin: SequenceHotkeysPlugin;
 	chords: Array<KeyChord>;
+	filter: string;
+	// A list of the CommandSetting elements
+	commandSettingEls: Array<CommandSetting>;
 
 	constructor(app: App, plugin: SequenceHotkeysPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+		this.filter = "";
+		this.commandSettingEls = new Array<CommandSetting>();
 	}
+
+	setFilter = (s: string) => {
+		this.filter = s;
+
+		// Hide/show the command settings based on the filter value.
+		const filterParts = this.filter.toLowerCase().split(" ");
+		this.commandSettingEls.map((cs: CommandSetting) =>
+			cs.settingEl.toggle(
+				filterParts.every((part) =>
+					cs.getCommand().name.toLowerCase().contains(part)
+				)
+			)
+		);
+	};
 
 	// Run every time the settings page is opened
 	display(): void {
@@ -255,15 +274,16 @@ class SettingTab extends PluginSettingTab {
 
 		let searchEl: SearchComponent;
 		new Setting(containerEl).addSearch((s: SearchComponent) => {
-			s.setPlaceholder("Filter...");
 			searchEl = s;
+			s.setPlaceholder("Filter...");
 		});
+		searchEl.onChange(this.setFilter);
 
 		const commandsContainer = containerEl.createDiv();
-		const commandSettings = new Array<CommandSetting>();
 
+		this.commandSettingEls = new Array<CommandSetting>();
 		allCommands(this.app).map((command: Command) => {
-			commandSettings.push(
+			this.commandSettingEls.push(
 				new CommandSetting(
 					commandsContainer,
 					command,
@@ -275,19 +295,10 @@ class SettingTab extends PluginSettingTab {
 		});
 
 		this.plugin.setSaveListener((s: Settings) => {
-			commandSettings.map((cs: CommandSetting) => cs.render(s));
+			this.commandSettingEls.map((cs: CommandSetting) => cs.render(s));
 		});
 
-		// Hide/show the command settings based on the filter value.
-		searchEl.onChange((filterStr: string) => {
-			const filterParts = filterStr.toLowerCase().split(" ");
-			commandSettings.map((cs: CommandSetting) =>
-				cs.settingEl.toggle(
-					filterParts.every((part) =>
-						cs.getCommand().name.toLowerCase().contains(part)
-					)
-				)
-			);
-		});
+		// Focus on the search input
+		searchEl.inputEl.focus();
 	}
 }
