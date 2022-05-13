@@ -140,10 +140,81 @@ export default class SequenceHotkeysPlugin extends Plugin {
 	};
 }
 
+class SettingTab extends PluginSettingTab {
+	plugin: SequenceHotkeysPlugin;
+	chords: Array<KeyChord>;
+	filter: string;
+	// A list of the CommandSetting elements
+	commandSettingEls: Array<CommandSetting>;
+
+	constructor(app: App, plugin: SequenceHotkeysPlugin) {
+		super(app, plugin);
+		this.plugin = plugin;
+		this.filter = "";
+		this.commandSettingEls = new Array<CommandSetting>();
+	}
+
+	setFilter = (s: string) => {
+		this.filter = s;
+
+		// Hide/show the command settings based on the filter value.
+		const filterParts = this.filter.toLowerCase().split(" ");
+		this.commandSettingEls.map((cs: CommandSetting) =>
+			cs.settingEl.toggle(
+				filterParts.every((part) =>
+					cs.getCommand().name.toLowerCase().contains(part)
+				)
+			)
+		);
+	};
+
+	// Run every time the settings page is closed
+	hide(): void {
+		this.commandSettingEls.map((s) => s.hide());
+	}
+
+	// Run every time the settings page is opened
+	display(): void {
+		const { containerEl } = this;
+		containerEl.empty();
+
+		let searchEl: SearchComponent;
+		new Setting(containerEl).addSearch((s: SearchComponent) => {
+			searchEl = s;
+			s.setPlaceholder("Filter...");
+		});
+		searchEl.onChange(this.setFilter);
+
+		const commandsContainer = containerEl.createDiv();
+
+		this.commandSettingEls = new Array<CommandSetting>();
+		allCommands(this.app).map((command: Command) => {
+			this.commandSettingEls.push(
+				new CommandSetting(
+					commandsContainer,
+					command,
+					this.plugin.settings
+				)
+					.addOnCreated(this.plugin.addHotkey)
+					.addOnReset(this.plugin.clearHotkey)
+			);
+		});
+
+		this.plugin.setSaveListener((s: Settings) => {
+			this.commandSettingEls.map((cs: CommandSetting) => cs.display(s));
+		});
+
+		// Focus on the search input
+		searchEl.inputEl.focus();
+	}
+}
+
 class CommandSetting extends Setting {
 	command: Command;
 	onCreated: ((id: string, chords: KeyChord[]) => void) | undefined;
 	onReset: ((id: string) => void) | undefined;
+
+	stopCapture: (() => KeyChord[]) | undefined;
 
 	constructor(
 		containerEl: HTMLElement,
@@ -152,7 +223,7 @@ class CommandSetting extends Setting {
 	) {
 		super(containerEl);
 		this.command = command;
-		this.render(settings);
+		this.display(settings);
 	}
 
 	getCommand = (): Command => this.command;
@@ -169,7 +240,13 @@ class CommandSetting extends Setting {
 		return this;
 	};
 
-	render = (settings: Settings) => {
+	// Should be run to clean up pending event listeners
+	hide = () => {
+		this.stopCapture?.();
+		this.stopCapture = undefined;
+	};
+
+	display = (settings: Settings) => {
 		this.clear();
 
 		const hotkey = settings.hotkeys.find(
@@ -213,11 +290,15 @@ class CommandSetting extends Setting {
 			const onUpdate = (chords: KeyChord[]) => {
 				hotkeySpan.setText(chords.map((c) => c.toString()).join(" "));
 			};
-			const stopCapture = captureChord(onUpdate);
+			this.stopCapture = captureChord(onUpdate);
 			document.addEventListener(
 				"mousedown",
 				(e: MouseEvent) => {
-					const chords = stopCapture();
+					if (!this.stopCapture) {
+						return;
+					}
+					const chords = this.stopCapture();
+					this.stopCapture = undefined;
 					if (chords.length) {
 						this.onCreated?.(this.command.id, chords);
 					}
@@ -228,79 +309,12 @@ class CommandSetting extends Setting {
 	};
 }
 
-class SettingTab extends PluginSettingTab {
-	plugin: SequenceHotkeysPlugin;
-	chords: Array<KeyChord>;
-	filter: string;
-	// A list of the CommandSetting elements
-	commandSettingEls: Array<CommandSetting>;
-
-	constructor(app: App, plugin: SequenceHotkeysPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-		this.filter = "";
-		this.commandSettingEls = new Array<CommandSetting>();
-	}
-
-	setFilter = (s: string) => {
-		this.filter = s;
-
-		// Hide/show the command settings based on the filter value.
-		const filterParts = this.filter.toLowerCase().split(" ");
-		this.commandSettingEls.map((cs: CommandSetting) =>
-			cs.settingEl.toggle(
-				filterParts.every((part) =>
-					cs.getCommand().name.toLowerCase().contains(part)
-				)
-			)
-		);
-	};
-
-	// Run every time the settings page is opened
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
-
-		let searchEl: SearchComponent;
-		new Setting(containerEl).addSearch((s: SearchComponent) => {
-			searchEl = s;
-			s.setPlaceholder("Filter...");
-		});
-		searchEl.onChange(this.setFilter);
-
-		const commandsContainer = containerEl.createDiv();
-
-		this.commandSettingEls = new Array<CommandSetting>();
-		allCommands(this.app).map((command: Command) => {
-			this.commandSettingEls.push(
-				new CommandSetting(
-					commandsContainer,
-					command,
-					this.plugin.settings
-				)
-					.addOnCreated(this.plugin.addHotkey)
-					.addOnReset(this.plugin.clearHotkey)
-			);
-		});
-
-		this.plugin.setSaveListener((s: Settings) => {
-			this.commandSettingEls.map((cs: CommandSetting) => cs.render(s));
-		});
-
-		// Focus on the search input
-		searchEl.inputEl.focus();
-	}
-}
-
 function captureChord(cb: (cs: KeyChord[]) => void): () => KeyChord[] {
 	let chords = new Array<KeyChord>();
 
 	const handleKeydown = (event: KeyboardEvent) => {
 		event.preventDefault();
 		event.stopPropagation();
-		if (isEscape(event)) {
-			document.removeEventListener("keydown", handleKeydown);
-		}
 		if (isModifier(event.code)) {
 			return;
 		}

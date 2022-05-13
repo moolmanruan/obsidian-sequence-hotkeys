@@ -89,13 +89,6 @@ export const isModifier = (key: string): boolean => {
 	}
 };
 
-export const isEscape = (e: KeyboardEvent): boolean =>
-	e.code === "Escape" &&
-	e.altKey === false &&
-	e.ctrlKey === false &&
-	e.metaKey === false &&
-	e.shiftKey === false;
-
 export class KeyChord {
 	meta: boolean;
 	ctrl: boolean;
