@@ -270,18 +270,19 @@ class CommandSetting extends Setting {
 			hotkeySpan.setText(
 				hotkey.chords.map((c) => c.toString()).join(" ")
 			);
-			// This button looks correct, but how do I add a tooltip?
 			const resetBtn = this.controlEl.createSpan({
 				cls: "setting-add-hotkey-button",
+				attr: { "aria-label": "Restore default" },
 			});
 			setIcon(resetBtn, "reset", 22);
 			resetBtn.onClickEvent(() => {
 				this.onReset?.(this.command.id);
 			});
 		}
-		// This button looks correct, but how do I add a tooltip?
+
 		const addBtn = this.controlEl.createSpan({
 			cls: "setting-add-hotkey-button",
+			attr: { "aria-label": "Customize this command" },
 		});
 		setIcon(addBtn, "any-key", 22);
 
