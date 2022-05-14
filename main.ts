@@ -125,15 +125,17 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		);
 	};
 
-	addHotkey = (commandId: string, chords: KeyChord[]) => {
+	addHotkey = (commandId: string, chords: KeyChord[] | undefined) => {
 		this._clearHotkey(commandId);
-		this.settings.hotkeys = [
-			...this.settings.hotkeys,
-			{
-				command: commandId,
-				chords,
-			},
-		];
+		if (chords?.length) {
+			this.settings.hotkeys = [
+				...this.settings.hotkeys,
+				{
+					command: commandId,
+					chords,
+				},
+			];
+		}
 		this._settingsUpdated();
 	};
 
@@ -298,14 +300,9 @@ class CommandSetting extends Setting {
 			document.addEventListener(
 				"mousedown",
 				(e: MouseEvent) => {
-					if (!this.stopCapture) {
-						return;
-					}
-					const chords = this.stopCapture();
+					const chords = this.stopCapture?.();
 					this.stopCapture = undefined;
-					if (chords.length) {
-						this.onCreated?.(this.command.id, chords);
-					}
+					this.onCreated?.(this.command.id, chords);
 				},
 				{ once: true } // Remove this listener after it is triggered
 			);
