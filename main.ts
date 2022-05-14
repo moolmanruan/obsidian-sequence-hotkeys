@@ -16,11 +16,11 @@ interface Hotkey {
 	chords: KeyChord[];
 }
 
-interface Settings {
+interface SequenceHotkeysSettings {
 	hotkeys: Hotkey[];
 }
 
-const DEFAULT_SETTINGS: Settings = {
+const DEFAULT_SETTINGS: SequenceHotkeysSettings = {
 	hotkeys: Array<Hotkey>(),
 };
 
@@ -34,7 +34,7 @@ interface Data {
 	hotkeys: HotkeyData[];
 }
 
-const SerializeSettings = (settings: Settings): Data => {
+const SerializeSettings = (settings: SequenceHotkeysSettings): Data => {
 	return {
 		hotkeys: settings.hotkeys.map((h) => ({
 			command: h.command,
@@ -42,7 +42,7 @@ const SerializeSettings = (settings: Settings): Data => {
 		})),
 	};
 };
-const DeserializeSettings = (data: Data): Settings => {
+const DeserializeSettings = (data: Data): SequenceHotkeysSettings => {
 	let settings = DEFAULT_SETTINGS;
 	if (data?.hotkeys) {
 		settings.hotkeys = data.hotkeys.map((h) => ({
@@ -58,9 +58,9 @@ function allCommands(app: any): Command[] {
 }
 
 export default class SequenceHotkeysPlugin extends Plugin {
-	settings: Settings;
+	settings: SequenceHotkeysSettings;
 	statusBar: HTMLElement;
-	saveListener: ((s: Settings) => void) | undefined;
+	saveListener: ((s: SequenceHotkeysSettings) => void) | undefined;
 	hotkeyManager: HotkeyManager;
 
 	async onload() {
@@ -74,7 +74,7 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		this.statusBar = this.addStatusBarItem();
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SettingTab(this.app, this));
+		this.addSettingTab(new SequenceHotkeysSettingTab(this.app, this));
 
 		this.registerDomEvent(document, "keydown", this.keyDownHandler);
 	}
@@ -103,7 +103,7 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		await this.saveData(SerializeSettings(this.settings));
 	}
 
-	setSaveListener = (fn: (s: Settings) => void) => {
+	setSaveListener = (fn: (s: SequenceHotkeysSettings) => void) => {
 		this.saveListener = fn;
 	};
 
@@ -143,7 +143,7 @@ export default class SequenceHotkeysPlugin extends Plugin {
 	};
 }
 
-class SettingTab extends PluginSettingTab {
+class SequenceHotkeysSettingTab extends PluginSettingTab {
 	plugin: SequenceHotkeysPlugin;
 	chords: Array<KeyChord>;
 	filter: string;
@@ -203,7 +203,7 @@ class SettingTab extends PluginSettingTab {
 			);
 		});
 
-		this.plugin.setSaveListener((s: Settings) => {
+		this.plugin.setSaveListener((s: SequenceHotkeysSettings) => {
 			this.commandSettingEls.map((cs: CommandSetting) => cs.display(s));
 		});
 
@@ -222,7 +222,7 @@ class CommandSetting extends Setting {
 	constructor(
 		containerEl: HTMLElement,
 		command: Command,
-		settings: Settings
+		settings: SequenceHotkeysSettings
 	) {
 		super(containerEl);
 		this.command = command;
@@ -249,7 +249,7 @@ class CommandSetting extends Setting {
 		this.stopCapture = undefined;
 	};
 
-	display = (settings: Settings) => {
+	display = (settings: SequenceHotkeysSettings) => {
 		this.clear();
 
 		const hotkey = settings.hotkeys.find(
