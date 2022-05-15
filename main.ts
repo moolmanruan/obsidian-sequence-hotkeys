@@ -6,10 +6,13 @@ import {
 	SearchComponent,
 	setIcon,
 	Setting,
+	Menu,
+	Notice,
 } from "obsidian";
 
 import { isModifier, KeyChord } from "keys";
 import { HotkeyManager } from "hotkey-manager";
+import { Key } from "readline";
 
 interface Hotkey {
 	command: string;
@@ -219,7 +222,7 @@ class CommandSetting extends Setting {
 	onCreated: ((id: string, chords: KeyChord[]) => void) | undefined;
 	onReset: ((id: string) => void) | undefined;
 
-	stopCapture: (() => KeyChord[]) | undefined;
+	cancelCapture: (() => void) | undefined;
 
 	constructor(
 		containerEl: HTMLElement,
@@ -247,8 +250,13 @@ class CommandSetting extends Setting {
 
 	// Should be run to clean up pending event listeners
 	hide = () => {
-		this.stopCapture?.();
-		this.stopCapture = undefined;
+		this.setCancelCapture(undefined);
+	};
+
+	setCancelCapture = (cb: (() => void) | undefined) => {
+		// Call current callback if it exists before replacing it
+		this.cancelCapture?.();
+		this.cancelCapture = cb;
 	};
 
 	display = (settings: SequenceHotkeysSettings) => {
@@ -259,24 +267,27 @@ class CommandSetting extends Setting {
 		);
 
 		this.setName(this.command.name);
+
 		const hotkeyDiv = this.controlEl.createDiv({
 			cls: "setting-command-hotkeys",
 		});
-
 		const hotkeySpan = hotkeyDiv.createSpan({
-			text: "Blank",
 			cls: "setting-hotkey mod-empty",
 		});
+		const hotkeySpanText = hotkeySpan.createSpan({
+			text: "Blank",
+		});
 
+		let resetBtn: HTMLElement | undefined;
 		if (hotkey) {
-			hotkeySpan.setText(
+			hotkeySpanText.setText(
 				hotkey.chords.map((c) => c.toString()).join(" ")
 			);
-			const resetBtn = this.controlEl.createSpan({
-				cls: "setting-add-hotkey-button",
+			resetBtn = this.controlEl.createSpan({
+				cls: "setting-restore-hotkey-button",
 				attr: { "aria-label": "Restore default" },
 			});
-			setIcon(resetBtn, "reset", 22);
+			setIcon(resetBtn, "reset", 18);
 			resetBtn.onClickEvent(() => {
 				this.onReset?.(this.command.id);
 			});
@@ -289,42 +300,104 @@ class CommandSetting extends Setting {
 		setIcon(addBtn, "any-key", 22);
 
 		addBtn.onClickEvent(() => {
-			hotkeySpan.setText("Press hotkey...");
+			const onUpdate = (chords: KeyChord[]) => {
+				hotkeySpanText.setText(
+					chords.map((c) => c.toString()).join(" ")
+				);
+			};
+			const onComplete = (chords: KeyChord[]) => {
+				this.setCancelCapture(undefined);
+				this.onCreated?.(this.command.id, chords);
+			};
+			const chordCapturer = new CaptureChord(onUpdate, onComplete);
+			this.setCancelCapture(chordCapturer.cancel);
+
+			hotkeySpanText.setText("Press hotkey...");
 			hotkeySpan.removeClass("mod-empty");
 			hotkeySpan.addClass("mod-active");
 
-			const onUpdate = (chords: KeyChord[]) => {
-				hotkeySpan.setText(chords.map((c) => c.toString()).join(" "));
-			};
-			this.stopCapture = captureChord(onUpdate);
-			document.addEventListener(
-				"mousedown",
-				(e: MouseEvent) => {
-					const chords = this.stopCapture?.();
-					this.stopCapture = undefined;
-					this.onCreated?.(this.command.id, chords);
-				},
-				{ once: true } // Remove this listener after it is triggered
+			addBtn.hide();
+			resetBtn?.hide();
+			const menuBtn = this.controlEl.createSpan({
+				cls: "setting-add-hotkey-button",
+				attr: { "aria-label": "Add ⏎ or ⎋ key to sequence" },
+			});
+			setIcon(menuBtn, "plus", 22);
+
+			const menu = new Menu(menuBtn).setNoIcon();
+			menu.addItem((item) =>
+				item.setTitle("Add ⏎").onClick(() => {
+					chordCapturer.pushChord(new KeyChord("Enter"));
+				})
 			);
+
+			menu.addItem((item) =>
+				item.setTitle("Add ⎋").onClick(() => {
+					chordCapturer.pushChord(new KeyChord("Escape"));
+				})
+			);
+			menuBtn.onClickEvent((event) => {
+				menu.showAtMouseEvent(event);
+			});
+
+			const doneBtn = this.controlEl.createSpan({
+				cls: "setting-add-hotkey-button",
+				attr: { "aria-label": "Add ⏎ or ⎋ key to sequence" },
+			});
+			setIcon(doneBtn, "checkbox-glyph", 22);
+			doneBtn.onClickEvent(() => {
+				onComplete(chordCapturer.chords);
+			});
 		});
 	};
 }
 
-function captureChord(cb: (cs: KeyChord[]) => void): () => KeyChord[] {
-	let chords = new Array<KeyChord>();
+class CaptureChord {
+	chords: KeyChord[];
+	onUpdate: (cs: KeyChord[]) => void;
+	onComplete: (cs: KeyChord[]) => void;
+	handleKeydown: (e: KeyboardEvent) => void;
 
-	const handleKeydown = (event: KeyboardEvent) => {
-		event.preventDefault();
-		event.stopPropagation();
-		if (isModifier(event.code)) {
-			return;
-		}
-		chords.push(new KeyChord(event));
-		cb(chords);
+	constructor(
+		onUpdate: (cs: KeyChord[]) => void,
+		onComplete: (cs: KeyChord[]) => void
+	) {
+		this.chords = new Array<KeyChord>();
+		this.onUpdate = onUpdate;
+		this.onComplete = onComplete;
+
+		this.handleKeydown = (event: KeyboardEvent) => {
+			event.preventDefault();
+			event.stopPropagation();
+
+			if (
+				event.altKey === false &&
+				event.ctrlKey === false &&
+				event.shiftKey === false &&
+				event.metaKey === false &&
+				(event.code === "Enter" || event.code === "Escape")
+			) {
+				this.cancel();
+				if (event.code === "Enter") {
+					this.onComplete(this.chords);
+				}
+				return;
+			}
+
+			if (isModifier(event.code)) {
+				return;
+			}
+			this.pushChord(new KeyChord(event));
+		};
+		document.addEventListener("keydown", this.handleKeydown);
+	}
+
+	pushChord = (c: KeyChord) => {
+		this.chords.push(c);
+		this.onUpdate(this.chords);
 	};
-	document.addEventListener("keydown", handleKeydown);
-	return (): KeyChord[] => {
-		document.removeEventListener("keydown", handleKeydown);
-		return chords;
+
+	cancel = () => {
+		document.removeEventListener("keydown", this.handleKeydown);
 	};
 }
