@@ -64,7 +64,7 @@ export class HotkeyManager {
 	};
 	removeHotkey = (id: string) => {
 		this.registeredHotkeys = this.registeredHotkeys.filter(
-			(r) => r.id != id
+			(r) => r.id !== id
 		);
 	};
 }
