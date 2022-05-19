@@ -12,13 +12,6 @@ function arrayStartsWith(arr: string[], start: string[]): boolean {
 	return start.every((_, i: number) => arr[i] === start[i]);
 }
 
-function arraysEqual(a: string[], b: string[]): boolean {
-	if (a.length !== b.length) {
-		return false;
-	}
-	return a.every((_, i: number) => a[i] === b[i]);
-}
-
 export class HotkeyManager {
 	triggerHandler: (id: string) => void;
 	registeredHotkeys: Registration[];
