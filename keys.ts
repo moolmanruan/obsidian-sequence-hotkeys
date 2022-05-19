@@ -1,5 +1,3 @@
-import { Modifier } from "obsidian";
-
 const CODE_CHAR_MAP = new Map<string, string>([
 	["Control", "⌃"],
 	["ControlLeft", "⌃"],

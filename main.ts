@@ -7,12 +7,10 @@ import {
 	setIcon,
 	Setting,
 	Menu,
-	Notice,
 } from "obsidian";
 
 import { isModifier, KeyChord } from "keys";
 import { HotkeyManager } from "hotkey-manager";
-import { Key } from "readline";
 
 interface Hotkey {
 	command: string;
