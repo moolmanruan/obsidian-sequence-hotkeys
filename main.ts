@@ -55,7 +55,11 @@ const DeserializeSettings = (data: Data): SequenceHotkeysSettings => {
 };
 
 function allCommands(app: any): Command[] {
-	return Object.values((app as any).commands.commands);
+	const commands: Command[] = Object.values((app as any).commands.commands);
+	commands.sort((a: Command, b: Command): number =>
+		a.name.localeCompare(b.name)
+	);
+	return commands;
 }
 
 export default class SequenceHotkeysPlugin extends Plugin {
