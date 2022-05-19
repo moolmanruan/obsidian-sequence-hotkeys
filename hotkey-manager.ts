@@ -46,8 +46,9 @@ export class HotkeyManager {
 		}
 
 		let exactMatch = hotkeys.find((r: Registration) => {
-			const rcs = r.chords.map((c) => c.toString());
-			return arraysEqual(css, rcs);
+			// Current chord is already a subset of all hotkeys after filtering
+			// above, so if length matches, it's an exact match.
+			return css.length === r.chords.length;
 		});
 		if (exactMatch) {
 			this.currentSequence = [];
