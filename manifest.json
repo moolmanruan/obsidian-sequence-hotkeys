@@ -6,5 +6,5 @@
 	"description": "This plugin allows you to set hotkeys with key sequences instead of a single chord.",
 	"author": "Ruan Moolman",
 	"authorUrl": "https://github.com/moolmanruan",
-	"isDesktopOnly": true
+	"isDesktopOnly": false
 }
