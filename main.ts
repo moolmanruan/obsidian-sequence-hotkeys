@@ -9,7 +9,7 @@ import {
 	Menu,
 } from "obsidian";
 
-import { isModifier, KeyChord } from "keys";
+import { isModifier, KeyChord, keyChordListsEqual } from "keys";
 import { HotkeyManager } from "hotkey-manager";
 
 interface Hotkey {
@@ -124,14 +124,7 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		}
 	};
 
-	_clearHotkey = (commandId: string) => {
-		this.settings.hotkeys = this.settings.hotkeys.filter(
-			(h: Hotkey) => h.command != commandId
-		);
-	};
-
 	addHotkey = (commandId: string, chords: KeyChord[] | undefined) => {
-		this._clearHotkey(commandId);
 		if (chords?.length) {
 			this.settings.hotkeys = [
 				...this.settings.hotkeys,
@@ -144,8 +137,11 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		this._settingsUpdated();
 	};
 
-	clearHotkey = (commandId: string) => {
-		this._clearHotkey(commandId);
+	deleteHotkey = (commandId: string, chords: KeyChord[]) => {
+		this.settings.hotkeys = this.settings.hotkeys.filter(
+			(h: Hotkey) =>
+				h.command != commandId || !keyChordListsEqual(h.chords, chords)
+		);
 		this._settingsUpdated();
 	};
 }
@@ -203,10 +199,10 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 				new CommandSetting(
 					commandsContainer,
 					command,
-					this.plugin.settings
+					this.plugin.settings,
+					this.plugin.addHotkey,
+					this.plugin.deleteHotkey
 				)
-					.addOnCreated(this.plugin.addHotkey)
-					.addOnReset(this.plugin.clearHotkey)
 			);
 		});
 
@@ -221,34 +217,26 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 
 class CommandSetting extends Setting {
 	command: Command;
-	onCreated: ((id: string, chords: KeyChord[]) => void) | undefined;
-	onReset: ((id: string) => void) | undefined;
+	onCreated: (id: string, chords: KeyChord[]) => void;
+	onDelete: (id: string, chords: KeyChord[]) => void;
 
 	cancelCapture: (() => void) | undefined;
 
 	constructor(
 		containerEl: HTMLElement,
 		command: Command,
-		settings: SequenceHotkeysSettings
+		settings: SequenceHotkeysSettings,
+		onCreated: (id: string, chords: KeyChord[]) => void,
+		onDelete: (id: string, chords: KeyChord[]) => void
 	) {
 		super(containerEl);
 		this.command = command;
 		this.display(settings);
+		this.onCreated = onCreated;
+		this.onDelete = onDelete;
 	}
 
 	getCommand = (): Command => this.command;
-
-	addOnCreated = (
-		fn: (id: string, chords: KeyChord[]) => void
-	): CommandSetting => {
-		this.onCreated = fn;
-		return this;
-	};
-
-	addOnReset = (fn: (id: string) => void): CommandSetting => {
-		this.onReset = fn;
-		return this;
-	};
 
 	// Should be run to clean up pending event listeners
 	hide = () => {
@@ -273,25 +261,21 @@ class CommandSetting extends Setting {
 		const hotkeyDiv = this.controlEl.createDiv({
 			cls: "setting-command-hotkeys",
 		});
-		const hotkeySpan = hotkeyDiv.createSpan({
-			cls: "setting-hotkey mod-empty",
-		});
-		const hotkeySpanText = hotkeySpan.createSpan({
-			text: "Blank",
-		});
 
-		let resetBtn: HTMLElement | undefined;
 		if (hotkey) {
-			hotkeySpanText.setText(
-				hotkey.chords.map((c) => c.toString()).join(" ")
-			);
-			resetBtn = this.controlEl.createSpan({
-				cls: "setting-restore-hotkey-button",
-				attr: { "aria-label": "Restore default" },
+			const hotkeySpan = hotkeyDiv.createSpan({
+				cls: "setting-hotkey mod-empty",
 			});
-			setIcon(resetBtn, "reset", 18);
-			resetBtn.onClickEvent(() => {
-				this.onReset?.(this.command.id);
+			const hotkeySpanText = hotkeySpan.createSpan({
+				text: hotkey.chords.map((c) => c.toString()).join(" ") + " ",
+			});
+			const deleteBtn = hotkeySpanText.createSpan({
+				cls: "setting-hotkey-icon setting-delete-hotkey",
+				attr: { "aria-label": "Delete hotkey" },
+			});
+			setIcon(deleteBtn, "cross", 8);
+			deleteBtn.onClickEvent(() => {
+				this.onDelete(hotkey.command, hotkey.chords);
 			});
 		}
 
@@ -302,8 +286,14 @@ class CommandSetting extends Setting {
 		setIcon(addBtn, "any-key", 22);
 
 		addBtn.onClickEvent(() => {
+			const newHotkeySpan = hotkeyDiv.createSpan({
+				cls: "setting-hotkey mod-empty",
+			});
+			const newHotkeySpanText = newHotkeySpan.createSpan({
+				text: "Press hotkey...",
+			});
 			const onUpdate = (chords: KeyChord[]) => {
-				hotkeySpanText.setText(
+				newHotkeySpanText.setText(
 					chords.map((c) => c.toString()).join(" ")
 				);
 			};
@@ -314,12 +304,10 @@ class CommandSetting extends Setting {
 			const chordCapturer = new CaptureChord(onUpdate, onComplete);
 			this.setCancelCapture(chordCapturer.cancel);
 
-			hotkeySpanText.setText("Press hotkey...");
-			hotkeySpan.removeClass("mod-empty");
-			hotkeySpan.addClass("mod-active");
+			newHotkeySpan.removeClass("mod-empty");
+			newHotkeySpan.addClass("mod-active");
 
 			addBtn.hide();
-			resetBtn?.hide();
 			const menuBtn = this.controlEl.createSpan({
 				cls: "setting-add-hotkey-button",
 				attr: { "aria-label": "Add ⏎ or ⎋ key to sequence" },

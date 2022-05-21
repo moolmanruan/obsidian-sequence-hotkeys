@@ -88,6 +88,8 @@ export const isModifier = (key: string): boolean => {
 	}
 };
 
+export const keyChordListsEqual = (a: KeyChord[], b: KeyChord[]): boolean => a.every((c, i) => c.equals(b[i]));
+
 export class KeyChord {
 	meta: boolean;
 	ctrl: boolean;
@@ -124,6 +126,15 @@ export class KeyChord {
 			this.alt = input.altKey;
 			this.shift = input.shiftKey;
 		}
+	}
+
+	equals = (other: KeyChord): boolean => {
+		return !!other
+			&& this.key === other.key
+			&& this.meta === other.meta
+			&& this.ctrl === other.ctrl
+			&& this.alt === other.alt
+			&& this.shift === other.shift;
 	}
 
 	serialize = (): string => {
