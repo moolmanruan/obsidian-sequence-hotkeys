@@ -252,7 +252,7 @@ class CommandSetting extends Setting {
 	display = (settings: SequenceHotkeysSettings) => {
 		this.clear();
 
-		const hotkey = settings.hotkeys.find(
+		const hotkeys = settings.hotkeys.filter(
 			(h: Hotkey) => h.command === this.command.id
 		);
 
@@ -262,7 +262,7 @@ class CommandSetting extends Setting {
 			cls: "setting-command-hotkeys",
 		});
 
-		if (hotkey) {
+		for (const hotkey of hotkeys) {
 			const hotkeySpan = hotkeyDiv.createSpan({
 				cls: "setting-hotkey mod-empty",
 			});
