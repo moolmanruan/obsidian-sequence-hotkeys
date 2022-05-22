@@ -90,7 +90,13 @@ function normalHotkeys(app: App): any {
 		([key, value]) => (hs[key] = value)
 	);
 	// https://marcus.se.net/obsidian-plugin-docs/api/types/Modifier
-	// Mod = Cmd on MacOS and Ctrl on other OS Ctrl = Ctrl key for every OS Meta = Cmd on MacOS and Win key on other OS
+	// - Mod  -> Cmd  (MacOS)
+	// - Mod  -> Ctrl (non MacOS)
+	// - Ctrl -> Ctrl
+	// - Meta -> Cmd  (MacOS)
+	// - Meta -> Win  (non MacOS)
+	// NOTE: We need to know the system we're on to make accurate warnings.
+	// NOTE: We need to map keys to char values, since Obsidian doesn't use the code.
 	Object.entries(hs).map((id, h) => {
 		console.log(id, h);
 	});
