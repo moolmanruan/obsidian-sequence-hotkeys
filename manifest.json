@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-sequence-hotkeys",
 	"name": "Sequence Hotkeys",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"minAppVersion": "0.12.0",
 	"description": "This plugin allows you to set hotkeys with key sequences instead of a single chord.",
 	"author": "Ruan Moolman",
