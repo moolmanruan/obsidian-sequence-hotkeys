@@ -54,12 +54,47 @@ const DeserializeSettings = (data: Data): SequenceHotkeysSettings => {
 	return settings;
 };
 
-function allCommands(app: any): Command[] {
+function allCommands(app: App): Command[] {
 	const commands: Command[] = Object.values((app as any).commands.commands);
 	commands.sort((a: Command, b: Command): number =>
 		a.name.localeCompare(b.name)
 	);
 	return commands;
+}
+
+// function hostname() {
+// 	var userAgent = window.navigator.userAgent,
+// 		platform = window.navigator.platform,
+// 		macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
+// 		windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
+// 		iosPlatforms = ['iPhone', 'iPad', 'iPod'],
+// 		os = null;
+// 	if (macosPlatforms.indexOf(platform) !== -1) {
+// 	  os = 'Mac OS';
+// 	} else if (userAgent.indexOf(iosPlatforms)) {
+// 	  os = 'iOS';
+// 	} else if (windowsPlatforms.indexOf(platform) !== -1) {
+// 	  os = 'Windows';
+// 	} else if (/Android/.test(userAgent)) {
+// 	  os = 'Android';
+// 	} else if (!os && /Linux/.test(platform)) {
+// 	  os = 'Linux';
+// 	}
+
+// 	return os;
+//   }
+
+function normalHotkeys(app: App): any {
+	const hs = { ...(app as any).hotkeyManager.defaultKeys };
+	Object.entries((app as any).hotkeyManager.customKeys).map(
+		([key, value]) => (hs[key] = value)
+	);
+	// https://marcus.se.net/obsidian-plugin-docs/api/types/Modifier
+	// Mod = Cmd on MacOS and Ctrl on other OS Ctrl = Ctrl key for every OS Meta = Cmd on MacOS and Win key on other OS
+	Object.entries(hs).map((id, h) => {
+		console.log(id, h);
+	});
+	return hs;
 }
 
 export default class SequenceHotkeysPlugin extends Plugin {
@@ -181,6 +216,8 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 
 	// Run every time the settings page is opened
 	display(): void {
+		console.log(normalHotkeys(this.app));
+
 		const { containerEl } = this;
 		containerEl.empty();
 
