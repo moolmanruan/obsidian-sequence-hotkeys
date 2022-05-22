@@ -1,18 +1,21 @@
-const CODE_CHAR_MAP = new Map<string, string>([
-	["Control", "⌃"],
-	["ControlLeft", "⌃"],
-	["ControlRight", "⌃"],
-	["Alt", "⌥"],
-	["AltLeft", "⌥"],
-	["AltRight", "⌥"],
-	["Shift", "⇧"],
-	["ShiftLeft", "⇧"],
-	["ShiftRight", "⇧"],
-	["Meta", "⌘"],
-	["MetaLeft", "⌘"],
-	["MetaRight", "⌘"],
-	["Escape", "⎋"],
-	["Enter", "⏎"],
+import { Platform } from "obsidian";
+
+const CODE_STR_MAP = new Map<string, string>([
+	["Control", "Ctrl-"],
+	["ControlLeft", "Ctrl-"],
+	["ControlRight", "Ctrl-"],
+	["Alt", "Alt-"],
+	["AltLeft", "Alt-"],
+	["AltRight", "Alt-"],
+	["Shift", "Shift-"],
+	["ShiftLeft", "Shift-"],
+	["ShiftRight", "Shift-"],
+	["Meta", "Meta-"],
+	["MetaLeft", "Meta-"],
+	["MetaRight", "Meta-"],
+	["Escape", "Esc"],
+	["Enter", "Enter"],
+	["CapsLock", "CapsLock"],
 	["KeyA", "A"],
 	["KeyB", "B"],
 	["KeyC", "C"],
@@ -63,10 +66,27 @@ const CODE_CHAR_MAP = new Map<string, string>([
 	["ArrowUp", "Up"],
 	["ArrowDown", "Down"],
 	["Backquote", "`"],
-	["CapsLock", "⇪"],
 ]);
 
-const codeToChar = (e: string): string => CODE_CHAR_MAP.get(e) || e;
+if (Platform.isMacOS) {
+	CODE_STR_MAP.set("Control", "⌃");
+	CODE_STR_MAP.set("ControlLeft", "⌃");
+	CODE_STR_MAP.set("ControlRight", "⌃");
+	CODE_STR_MAP.set("Alt", "⌥");
+	CODE_STR_MAP.set("AltLeft", "⌥");
+	CODE_STR_MAP.set("AltRight", "⌥");
+	CODE_STR_MAP.set("Shift", "⇧");
+	CODE_STR_MAP.set("ShiftLeft", "⇧");
+	CODE_STR_MAP.set("ShiftRight", "⇧");
+	CODE_STR_MAP.set("Meta", "⌘");
+	CODE_STR_MAP.set("MetaLeft", "⌘");
+	CODE_STR_MAP.set("MetaRight", "⌘");
+	CODE_STR_MAP.set("Escape", "⎋");
+	CODE_STR_MAP.set("Enter", "⏎");
+	CODE_STR_MAP.set("CapsLock", "⇪");
+}
+
+export const codeToString = (e: string): string => CODE_STR_MAP.get(e) || e;
 
 export const isModifier = (key: string): boolean => {
 	switch (key) {
@@ -88,7 +108,8 @@ export const isModifier = (key: string): boolean => {
 	}
 };
 
-export const keyChordListsEqual = (a: KeyChord[], b: KeyChord[]): boolean => a.every((c, i) => c.equals(b[i]));
+export const keyChordListsEqual = (a: KeyChord[], b: KeyChord[]): boolean =>
+	a.every((c, i) => c.equals(b[i]));
 
 export class KeyChord {
 	meta: boolean;
@@ -129,13 +150,15 @@ export class KeyChord {
 	}
 
 	equals = (other: KeyChord): boolean => {
-		return !!other
-			&& this.key === other.key
-			&& this.meta === other.meta
-			&& this.ctrl === other.ctrl
-			&& this.alt === other.alt
-			&& this.shift === other.shift;
-	}
+		return (
+			!!other &&
+			this.key === other.key &&
+			this.meta === other.meta &&
+			this.ctrl === other.ctrl &&
+			this.alt === other.alt &&
+			this.shift === other.shift
+		);
+	};
 
 	serialize = (): string => {
 		const parts = new Array<string>();
@@ -151,7 +174,7 @@ export class KeyChord {
 		if (this.shift) {
 			parts.push("S");
 		}
-		parts.push(codeToChar(this.key));
+		parts.push(codeToString(this.key));
 		return parts.join("-");
 	};
 
@@ -169,7 +192,7 @@ export class KeyChord {
 		if (this.shift) {
 			keys.push("Shift");
 		}
-		keys.push(codeToChar(this.key));
-		return keys.map(codeToChar).join("");
+		keys.push(codeToString(this.key));
+		return keys.map(codeToString).join("");
 	};
 }

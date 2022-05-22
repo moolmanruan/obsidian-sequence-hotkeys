@@ -9,7 +9,7 @@ import {
 	Menu,
 } from "obsidian";
 
-import { isModifier, KeyChord, keyChordListsEqual } from "keys";
+import { isModifier, KeyChord, keyChordListsEqual, codeToString } from "keys";
 import { HotkeyManager } from "hotkey-manager";
 
 interface Hotkey {
@@ -310,19 +310,23 @@ class CommandSetting extends Setting {
 			addBtn.hide();
 			const menuBtn = this.controlEl.createSpan({
 				cls: "setting-add-hotkey-button",
-				attr: { "aria-label": "Add ⏎ or ⎋ key to sequence" },
+				attr: {
+					"aria-label": `Add ${codeToString(
+						"Enter"
+					)} or ${codeToString("Escape")} key to sequence`,
+				},
 			});
 			setIcon(menuBtn, "plus", 22);
 
 			const menu = new Menu(menuBtn).setNoIcon();
 			menu.addItem((item) =>
-				item.setTitle("Add ⏎").onClick(() => {
+				item.setTitle("Add " + codeToString("Enter")).onClick(() => {
 					chordCapturer.pushChord(new KeyChord("Enter"));
 				})
 			);
 
 			menu.addItem((item) =>
-				item.setTitle("Add ⎋").onClick(() => {
+				item.setTitle("Add " + codeToString("Escape")).onClick(() => {
 					chordCapturer.pushChord(new KeyChord("Escape"));
 				})
 			);
@@ -332,7 +336,9 @@ class CommandSetting extends Setting {
 
 			const doneBtn = this.controlEl.createSpan({
 				cls: "setting-add-hotkey-button",
-				attr: { "aria-label": "Add ⏎ or ⎋ key to sequence" },
+				attr: {
+					"aria-label": "Accept hotkey sequence",
+				},
 			});
 			setIcon(doneBtn, "checkbox-glyph", 22);
 			doneBtn.onClickEvent(() => {
