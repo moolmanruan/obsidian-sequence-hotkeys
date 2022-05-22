@@ -7,6 +7,8 @@ import {
 	setIcon,
 	Setting,
 	Menu,
+	Platform,
+	Hotkey as ObsidianHotkey,
 } from "obsidian";
 
 import { isModifier, KeyChord, keyChordListsEqual, codeToString } from "keys";
@@ -89,16 +91,21 @@ function normalHotkeys(app: App): any {
 	Object.entries((app as any).hotkeyManager.customKeys).map(
 		([key, value]) => (hs[key] = value)
 	);
-	// https://marcus.se.net/obsidian-plugin-docs/api/types/Modifier
-	// - Mod  -> Cmd  (MacOS)
-	// - Mod  -> Ctrl (non MacOS)
-	// - Ctrl -> Ctrl
-	// - Meta -> Cmd  (MacOS)
-	// - Meta -> Win  (non MacOS)
-	// NOTE: We need to know the system we're on to make accurate warnings.
 	// NOTE: We need to map keys to char values, since Obsidian doesn't use the code.
-	Object.entries(hs).map((id, h) => {
-		console.log(id, h);
+	Object.entries(hs).map(([id, hcs]) => {
+		(hcs as ObsidianHotkey[]).map((hc: ObsidianHotkey) => {
+			let kc = new KeyChord(hc.key);
+			kc.ctrl = hc.modifiers.contains("Ctrl");
+			kc.alt = hc.modifiers.contains("Alt");
+			kc.shift = hc.modifiers.contains("Shift");
+			kc.meta = hc.modifiers.contains("Meta");
+			if (Platform.isMacOS) {
+				kc.meta = kc.meta || hc.modifiers.contains("Mod");
+			} else {
+				kc.ctrl = kc.ctrl || hc.modifiers.contains("Mod");
+			}
+			console.log(id, kc.toString());
+		});
 	});
 	return hs;
 }
