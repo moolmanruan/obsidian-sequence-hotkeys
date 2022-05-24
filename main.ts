@@ -1,12 +1,14 @@
 import {
 	App,
 	Command,
+	Platform,
 	Plugin,
 	PluginSettingTab,
 	SearchComponent,
 	setIcon,
 	Setting,
 	Menu,
+	Hotkey as ObsidianHotkey,
 } from "obsidian";
 
 import { isModifier, KeyChord, keyChordListsEqual, codeToString } from "keys";
@@ -146,6 +148,42 @@ export default class SequenceHotkeysPlugin extends Plugin {
 	};
 }
 
+const hotkeyToInternal = (hh: ObsidianHotkey[]): KeyChord[] =>
+	hh.map((h: ObsidianHotkey): KeyChord => {
+		let k = new KeyChord(h.key);
+		k.ctrl = h.modifiers.contains("Ctrl");
+		k.alt = h.modifiers.contains("Alt");
+		k.shift = h.modifiers.contains("Shift");
+		k.meta = h.modifiers.contains("Meta");
+		if (Platform.isMacOS) {
+			k.meta = k.meta || h.modifiers.contains("Mod");
+		} else {
+			k.ctrl = k.ctrl || h.modifiers.contains("Mod");
+		}
+		return k;
+	});
+
+const defaultCommandKeys = (app: App): Map<string, Array<KeyChord>> => {
+	const ret = new Map<string, Array<KeyChord>>();
+	Object.entries((app as any).hotkeyManager.defaultKeys).map(([key, val]) => {
+		ret.set(key, hotkeyToInternal(val));
+	});
+
+	const cmdIDs = allCommands(app).map((c) => c.id);
+	const cmdExists = (id: string): boolean =>
+		!!cmdIDs.find((cID) => cID === id);
+
+	Object.entries((app as any).hotkeyManager.customKeys).map(([key, val]) => {
+		if (val.length === 0 || !cmdExists(key)) {
+			ret.delete(key);
+			return;
+		}
+		ret.set(key, hotkeyToInternal(val));
+	});
+
+	return ret;
+};
+
 class SequenceHotkeysSettingTab extends PluginSettingTab {
 	plugin: SequenceHotkeysPlugin;
 	chords: Array<KeyChord>;
@@ -181,6 +219,11 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 
 	// Run every time the settings page is opened
 	display(): void {
+		console.log(">>>>>");
+		const defKeys = defaultCommandKeys(this.app);
+		defKeys.forEach((v, k) => console.log(k + " -> " + v));
+		console.log("<<<<<");
+
 		const { containerEl } = this;
 		containerEl.empty();
 
