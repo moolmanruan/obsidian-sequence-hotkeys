@@ -1,4 +1,4 @@
-import { KeyChord } from "./keys";
+import { KeyChord, keySequenceEqual } from "./keys";
 
 jest.mock("obsidian");
 
@@ -40,5 +40,57 @@ describe("KeyChord", () => {
 		expect(kc.meta).toBeFalsy();
 		expect(kc.alt).toBeFalsy();
 		expect(kc.key).toBe("Two");
+	});
+});
+
+describe("keySequenceEqual", () => {
+	test("same sequence returns true", () => {
+		expect(keySequenceEqual([], [])).toBeTruthy();
+
+		expect(
+			keySequenceEqual([new KeyChord("C-KeyA")], [new KeyChord("C-KeyA")])
+		).toBeTruthy();
+
+		expect(
+			keySequenceEqual(
+				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")],
+				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")]
+			)
+		).toBeTruthy();
+	});
+
+	test("different sequences return false", () => {
+		expect(
+			keySequenceEqual([new KeyChord("C-KeyA")], [new KeyChord("C-KeyB")])
+		).toBeFalsy();
+
+		expect(
+			keySequenceEqual(
+				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")],
+				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyE")]
+			)
+		).toBeFalsy();
+	});
+
+	test("subset matches return false", () => {
+		expect(keySequenceEqual([], [new KeyChord("C-KeyA")])).toBeFalsy();
+
+		expect(
+			keySequenceEqual(
+				[new KeyChord("C-KeyA")],
+				[new KeyChord("C-KeyA"), new KeyChord("C-KeyB")]
+			)
+		).toBeFalsy();
+
+		expect(
+			keySequenceEqual(
+				[
+					new KeyChord("M-S-KeyW"),
+					new KeyChord("M-S-KeyQ"),
+					new KeyChord("M-S-KeyE"),
+				],
+				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")]
+			)
+		).toBeFalsy();
 	});
 });

@@ -109,7 +109,7 @@ export const isModifier = (key: string): boolean => {
 };
 
 export const keySequenceEqual = (a: KeyChord[], b: KeyChord[]): boolean =>
-	a.every((c, i) => c.equals(b[i]));
+	a.length === b.length && a.every((c, i) => c.equals(b[i]));
 
 export class KeyChord {
 	meta: boolean;
