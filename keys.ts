@@ -108,7 +108,7 @@ export const isModifier = (key: string): boolean => {
 	}
 };
 
-export const keyChordListsEqual = (a: KeyChord[], b: KeyChord[]): boolean =>
+export const keySequenceEqual = (a: KeyChord[], b: KeyChord[]): boolean =>
 	a.every((c, i) => c.equals(b[i]));
 
 export class KeyChord {

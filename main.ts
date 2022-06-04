@@ -9,7 +9,7 @@ import {
 	Menu,
 } from "obsidian";
 
-import { isModifier, KeyChord, keyChordListsEqual, codeToString } from "keys";
+import { isModifier, KeyChord, keySequenceEqual, codeToString } from "keys";
 import { HotkeyManager } from "hotkey-manager";
 
 interface Hotkey {
@@ -140,7 +140,7 @@ export default class SequenceHotkeysPlugin extends Plugin {
 	deleteHotkey = (commandId: string, chords: KeyChord[]) => {
 		this.settings.hotkeys = this.settings.hotkeys.filter(
 			(h: Hotkey) =>
-				h.command != commandId || !keyChordListsEqual(h.chords, chords)
+				h.command != commandId || !keySequenceEqual(h.chords, chords)
 		);
 		this._settingsUpdated();
 	};
