@@ -64,28 +64,6 @@ function allCommands(app: App): Command[] {
 	return commands;
 }
 
-// function hostname() {
-// 	var userAgent = window.navigator.userAgent,
-// 		platform = window.navigator.platform,
-// 		macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
-// 		windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
-// 		iosPlatforms = ['iPhone', 'iPad', 'iPod'],
-// 		os = null;
-// 	if (macosPlatforms.indexOf(platform) !== -1) {
-// 	  os = 'Mac OS';
-// 	} else if (userAgent.indexOf(iosPlatforms)) {
-// 	  os = 'iOS';
-// 	} else if (windowsPlatforms.indexOf(platform) !== -1) {
-// 	  os = 'Windows';
-// 	} else if (/Android/.test(userAgent)) {
-// 	  os = 'Android';
-// 	} else if (!os && /Linux/.test(platform)) {
-// 	  os = 'Linux';
-// 	}
-
-// 	return os;
-//   }
-
 function normalHotkeys(app: App): any {
 	const hs = { ...(app as any).hotkeyManager.defaultKeys };
 	Object.entries((app as any).hotkeyManager.customKeys).map(
