@@ -1,5 +1,7 @@
 import { KeyChord } from "./keys";
 
+jest.mock("obsidian");
+
 describe("KeyChord", () => {
 	test("string constructor", () => {
 		let kc = new KeyChord("");
