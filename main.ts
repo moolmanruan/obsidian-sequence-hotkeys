@@ -82,7 +82,6 @@ function normalHotkeys(app: App): any {
 			} else {
 				kc.ctrl = kc.ctrl || hc.modifiers.contains("Mod");
 			}
-			console.log(id, kc.toString());
 		});
 	});
 	return hs;
@@ -207,7 +206,9 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 
 	// Run every time the settings page is opened
 	display(): void {
-		console.log(normalHotkeys(this.app));
+		const normalHKs = normalHotkeys(this.app);
+		console.log(normalHKs);
+		console.log(this.plugin.settings.hotkeys);
 
 		const { containerEl } = this;
 		containerEl.empty();
