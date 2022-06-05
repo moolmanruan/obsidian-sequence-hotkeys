@@ -9,13 +9,22 @@ import {
 	Menu,
 } from "obsidian";
 
-import { isModifier, KeyChord, keySequenceEqual, codeToString } from "keys";
+import {
+	isModifier,
+	KeyChord,
+	keySequenceEqual,
+	codeToString,
+	keySequencePartiallyEqual,
+} from "keys";
 import { HotkeyManager } from "hotkey-manager";
 
 interface Hotkey {
 	command: string;
 	chords: KeyChord[];
 }
+
+const hotkeysEqual = (a: Hotkey, b: Hotkey): boolean =>
+	a.command === b.command && keySequenceEqual(a.chords, b.chords);
 
 interface SequenceHotkeysSettings {
 	hotkeys: Hotkey[];
@@ -61,6 +70,9 @@ function allCommands(app: any): Command[] {
 	);
 	return commands;
 }
+
+const commandName = (app: any, id: string): string | undefined =>
+	allCommands(app).find((c: Command) => c.id === id)?.name;
 
 const hotkeysForCommand = (s: SequenceHotkeysSettings, id: string): Hotkey[] =>
 	s.hotkeys.filter((h: Hotkey) => h.command === id);
@@ -208,7 +220,25 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 
 		const updateCommands = (s: SequenceHotkeysSettings) => {
 			this.commandSettingEls.map((cs: CommandSetting) => {
-				const hotkeys = hotkeysForCommand(s, cs.getCommand().id);
+				const hotkeys: CommandSettingHotkey[] = hotkeysForCommand(
+					s,
+					cs.getCommand().id
+				).map((h: Hotkey) => {
+					const conflict = s.hotkeys.find(
+						(shc: Hotkey) =>
+							!hotkeysEqual(shc, h) &&
+							keySequencePartiallyEqual(shc.chords, h.chords)
+					);
+					return {
+						chords: h.chords,
+						warning: !!conflict
+							? `This hotkey conflicts with "${commandName(
+									this.app,
+									conflict.command
+							  )}"`
+							: "",
+					};
+				});
 				cs.display(hotkeys);
 			});
 		};
@@ -221,6 +251,11 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 		// Focus on the search input
 		searchEl.inputEl.focus();
 	}
+}
+
+interface CommandSettingHotkey {
+	chords: KeyChord[];
+	warning: string;
 }
 
 class CommandSetting extends Setting {
@@ -255,7 +290,7 @@ class CommandSetting extends Setting {
 		this.cancelCapture = cb;
 	};
 
-	display = (hotkeys: Hotkey[]) => {
+	display = (hotkeys: CommandSettingHotkey[]) => {
 		this.clear();
 
 		this.setName(this.command.name);
@@ -265,8 +300,10 @@ class CommandSetting extends Setting {
 		});
 
 		for (const hotkey of hotkeys) {
+			const warnClass = !!hotkey.warning ? " has-conflict" : "";
 			const hotkeySpan = hotkeyDiv.createSpan({
-				cls: "setting-hotkey mod-empty",
+				cls: "setting-hotkey mod-empty" + warnClass,
+				attr: { "aria-label": hotkey.warning },
 			});
 			const hotkeySpanText = hotkeySpan.createSpan({
 				text: hotkey.chords.map((c) => c.toString()).join(" ") + " ",
@@ -277,7 +314,7 @@ class CommandSetting extends Setting {
 			});
 			setIcon(deleteBtn, "cross", 8);
 			deleteBtn.onClickEvent(() => {
-				this.onDelete(hotkey.command, hotkey.chords);
+				this.onDelete(this.command.id, hotkey.chords);
 			});
 		}
 
