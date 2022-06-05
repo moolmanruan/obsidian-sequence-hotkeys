@@ -41,6 +41,11 @@ describe("KeyChord", () => {
 		expect(kc.alt).toEqual(false);
 		expect(kc.key).toBe("Two");
 	});
+
+	test("serialize", () => {
+		expect(new KeyChord("C-KeyA").serialize()).toEqual("C-KeyA");
+		expect(new KeyChord("C-M-S-KeyG").serialize()).toEqual("M-C-S-KeyG");
+	});
 });
 
 describe("keySequenceEqual", () => {

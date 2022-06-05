@@ -190,7 +190,7 @@ export class KeyChord {
 		if (this.shift) {
 			parts.push("S");
 		}
-		parts.push(codeToString(this.key));
+		parts.push(this.key);
 		return parts.join("-");
 	};
 
