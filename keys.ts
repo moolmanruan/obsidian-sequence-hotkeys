@@ -111,6 +111,22 @@ export const isModifier = (key: string): boolean => {
 export const keySequenceEqual = (a: KeyChord[], b: KeyChord[]): boolean =>
 	a.length === b.length && a.every((c, i) => c.equals(b[i]));
 
+export const keySequencePartiallyEqual = (
+	a: KeyChord[],
+	b: KeyChord[]
+): boolean => {
+	if (a.length === 0 || b.length === 0) {
+		// Empty sequence always returns false
+		return false;
+	}
+	if (a.length > b.length) {
+		// If a is longer, check that every chord in b matches a
+		return b.every((c, i) => c.equals(a[i]));
+	}
+	// If b is longer, check that every chord in a matches b
+	return a.every((c, i) => c.equals(b[i]));
+};
+
 export class KeyChord {
 	meta: boolean;
 	ctrl: boolean;
