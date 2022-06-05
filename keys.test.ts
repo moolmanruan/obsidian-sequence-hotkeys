@@ -5,82 +5,82 @@ jest.mock("obsidian");
 describe("KeyChord", () => {
 	test("string constructor", () => {
 		let kc = new KeyChord("");
-		expect(kc.meta).toBeFalsy();
-		expect(kc.alt).toBeFalsy();
-		expect(kc.shift).toBeFalsy();
-		expect(kc.ctrl).toBeFalsy();
+		expect(kc.meta).toEqual(false);
+		expect(kc.alt).toEqual(false);
+		expect(kc.shift).toEqual(false);
+		expect(kc.ctrl).toEqual(false);
 		expect(kc.key).toBe("");
 
 		kc = new KeyChord("C-KeyA");
-		expect(kc.ctrl).toBeTruthy();
+		expect(kc.ctrl).toEqual(true);
 		expect(kc.key).toBe("KeyA");
 
 		kc = new KeyChord("M-Random");
-		expect(kc.meta).toBeTruthy();
+		expect(kc.meta).toEqual(true);
 		expect(kc.key).toBe("Random");
 
 		kc = new KeyChord("A-Digit2");
-		expect(kc.alt).toBeTruthy();
+		expect(kc.alt).toEqual(true);
 		expect(kc.key).toBe("Digit2");
 
 		kc = new KeyChord("S-KeyK");
-		expect(kc.shift).toBeTruthy();
+		expect(kc.shift).toEqual(true);
 		expect(kc.key).toBe("KeyK");
 
 		kc = new KeyChord("M-A-S-One");
-		expect(kc.meta).toBeTruthy();
-		expect(kc.alt).toBeTruthy();
-		expect(kc.shift).toBeTruthy();
-		expect(kc.ctrl).toBeFalsy();
+		expect(kc.meta).toEqual(true);
+		expect(kc.alt).toEqual(true);
+		expect(kc.shift).toEqual(true);
+		expect(kc.ctrl).toEqual(false);
 		expect(kc.key).toBe("One");
 
 		kc = new KeyChord("S-C-Two");
-		expect(kc.shift).toBeTruthy();
-		expect(kc.ctrl).toBeTruthy();
-		expect(kc.meta).toBeFalsy();
-		expect(kc.alt).toBeFalsy();
+		expect(kc.shift).toEqual(true);
+		expect(kc.ctrl).toEqual(true);
+		expect(kc.meta).toEqual(false);
+		expect(kc.alt).toEqual(false);
 		expect(kc.key).toBe("Two");
 	});
 });
 
 describe("keySequenceEqual", () => {
 	test("same sequence returns true", () => {
-		expect(keySequenceEqual([], [])).toBeTruthy();
+		expect(keySequenceEqual([], [])).toEqual(true);
 
 		expect(
 			keySequenceEqual([new KeyChord("C-KeyA")], [new KeyChord("C-KeyA")])
-		).toBeTruthy();
+		).toEqual(true);
 
 		expect(
 			keySequenceEqual(
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")],
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")]
 			)
-		).toBeTruthy();
+		).toEqual(true);
 	});
 
 	test("different sequences return false", () => {
 		expect(
 			keySequenceEqual([new KeyChord("C-KeyA")], [new KeyChord("C-KeyB")])
-		).toBeFalsy();
+		).toEqual(false);
 
 		expect(
 			keySequenceEqual(
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")],
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyE")]
 			)
-		).toBeFalsy();
+		).toEqual(false);
 	});
 
 	test("subset matches return false", () => {
-		expect(keySequenceEqual([], [new KeyChord("C-KeyA")])).toBeFalsy();
+		expect(keySequenceEqual([], [new KeyChord("C-KeyA")])).toEqual(false);
 
 		expect(
 			keySequenceEqual(
 				[new KeyChord("C-KeyA")],
 				[new KeyChord("C-KeyA"), new KeyChord("C-KeyB")]
 			)
-		).toBeFalsy();
+		).toEqual(false);
 
 		expect(
 			keySequenceEqual(
@@ -91,7 +91,7 @@ describe("keySequenceEqual", () => {
 				],
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")]
 			)
-		).toBeFalsy();
+		).toEqual(false);
 	});
 });
 
@@ -102,14 +102,14 @@ describe("keySequencePartiallyEqual", () => {
 				[new KeyChord("C-KeyA")],
 				[new KeyChord("C-KeyA")]
 			)
-		).toBeTruthy();
+		).toEqual(true);
 
 		expect(
 			keySequencePartiallyEqual(
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")],
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")]
 			)
-		).toBeTruthy();
+		).toEqual(true);
 	});
 
 	test("subset of sequence returns true", () => {
@@ -118,24 +118,24 @@ describe("keySequencePartiallyEqual", () => {
 				[new KeyChord("C-KeyA")],
 				[new KeyChord("C-KeyA"), new KeyChord("C-KeyB")]
 			)
-		).toBeTruthy();
+		).toEqual(true);
 
 		expect(
 			keySequencePartiallyEqual(
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")],
 				[new KeyChord("M-S-KeyW")]
 			)
-		).toBeTruthy();
+		).toEqual(true);
 	});
 
 	test("empty sequence always returns false", () => {
-		expect(keySequencePartiallyEqual([], [])).toBeFalsy();
-		expect(
-			keySequencePartiallyEqual([], [new KeyChord("M-KeyG")])
-		).toBeFalsy();
-		expect(
-			keySequencePartiallyEqual([new KeyChord("M-KeyG")], [])
-		).toBeFalsy();
+		expect(keySequencePartiallyEqual([], [])).toEqual(false);
+		expect(keySequencePartiallyEqual([], [new KeyChord("M-KeyG")])).toEqual(
+			false
+		);
+		expect(keySequencePartiallyEqual([new KeyChord("M-KeyG")], [])).toEqual(
+			false
+		);
 	});
 
 	test("different sequences return false", () => {
@@ -144,14 +144,14 @@ describe("keySequencePartiallyEqual", () => {
 				[new KeyChord("C-KeyB")],
 				[new KeyChord("C-KeyA")]
 			)
-		).toBeFalsy();
+		).toEqual(false);
 
 		expect(
 			keySequencePartiallyEqual(
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")],
 				[new KeyChord("C-KeyA")]
 			)
-		).toBeFalsy();
+		).toEqual(false);
 	});
 
 	test("only matches at start returns true", () => {
@@ -160,13 +160,13 @@ describe("keySequencePartiallyEqual", () => {
 				[new KeyChord("C-KeyB")],
 				[new KeyChord("C-KeyA"), new KeyChord("C-KeyB")]
 			)
-		).toBeFalsy();
+		).toEqual(false);
 
 		expect(
 			keySequencePartiallyEqual(
 				[new KeyChord("M-S-KeyW"), new KeyChord("M-S-KeyQ")],
 				[new KeyChord("M-S-KeyQ")]
 			)
-		).toBeFalsy();
+		).toEqual(false);
 	});
 });

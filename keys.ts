@@ -128,10 +128,10 @@ export const keySequencePartiallyEqual = (
 };
 
 export class KeyChord {
-	meta: boolean;
-	ctrl: boolean;
-	alt: boolean;
-	shift: boolean;
+	meta: boolean = false;
+	ctrl: boolean = false;
+	alt: boolean = false;
+	shift: boolean = false;
 	key: string; // KeyboardEvent.code
 
 	constructor(input: KeyboardEvent | string) {
