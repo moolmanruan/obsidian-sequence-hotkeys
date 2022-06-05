@@ -62,6 +62,9 @@ function allCommands(app: any): Command[] {
 	return commands;
 }
 
+const hotkeysForCommand = (s: SequenceHotkeysSettings, id: string): Hotkey[] =>
+	s.hotkeys.filter((h: Hotkey) => h.command === id);
+
 export default class SequenceHotkeysPlugin extends Plugin {
 	settings: SequenceHotkeysSettings;
 	statusBar: HTMLElement;
@@ -193,22 +196,27 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 
 		const commandsContainer = containerEl.createDiv();
 
-		this.commandSettingEls = new Array<CommandSetting>();
-		allCommands(this.app).map((command: Command) => {
-			this.commandSettingEls.push(
+		this.commandSettingEls = allCommands(this.app).map(
+			(command: Command) =>
 				new CommandSetting(
 					commandsContainer,
 					command,
-					this.plugin.settings,
 					this.plugin.addHotkey,
 					this.plugin.deleteHotkey
 				)
-			);
-		});
+		);
 
-		this.plugin.setSaveListener((s: SequenceHotkeysSettings) => {
-			this.commandSettingEls.map((cs: CommandSetting) => cs.display(s));
-		});
+		const updateCommands = (s: SequenceHotkeysSettings) => {
+			this.commandSettingEls.map((cs: CommandSetting) => {
+				const hotkeys = hotkeysForCommand(s, cs.getCommand().id);
+				cs.display(hotkeys);
+			});
+		};
+
+		this.plugin.setSaveListener(updateCommands);
+
+		// Update the command with the current setting's hotkeys
+		updateCommands(this.plugin.settings);
 
 		// Focus on the search input
 		searchEl.inputEl.focus();
@@ -225,13 +233,11 @@ class CommandSetting extends Setting {
 	constructor(
 		containerEl: HTMLElement,
 		command: Command,
-		settings: SequenceHotkeysSettings,
 		onCreated: (id: string, chords: KeyChord[]) => void,
 		onDelete: (id: string, chords: KeyChord[]) => void
 	) {
 		super(containerEl);
 		this.command = command;
-		this.display(settings);
 		this.onCreated = onCreated;
 		this.onDelete = onDelete;
 	}
@@ -249,12 +255,8 @@ class CommandSetting extends Setting {
 		this.cancelCapture = cb;
 	};
 
-	display = (settings: SequenceHotkeysSettings) => {
+	display = (hotkeys: Hotkey[]) => {
 		this.clear();
-
-		const hotkeys = settings.hotkeys.filter(
-			(h: Hotkey) => h.command === this.command.id
-		);
 
 		this.setName(this.command.name);
 
