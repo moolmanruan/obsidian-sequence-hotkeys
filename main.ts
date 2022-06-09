@@ -348,7 +348,7 @@ class CommandSetting extends Setting {
 				this.onCreated?.(this.command.id, chords);
 			};
 			const chordCapturer = new CaptureChord(onUpdate, onComplete);
-			this.setCancelCapture(chordCapturer.cancel);
+			this.setCancelCapture(chordCapturer.destruct);
 
 			newHotkeySpan.removeClass("mod-empty");
 			newHotkeySpan.addClass("mod-active");
@@ -395,10 +395,10 @@ class CommandSetting extends Setting {
 }
 
 class CaptureChord {
+	chordListener: ChordListener;
 	chords: KeyChord[];
 	onUpdate: (cs: KeyChord[]) => void;
 	onComplete: (cs: KeyChord[]) => void;
-	handleKeydown: (e: KeyboardEvent) => void;
 
 	constructor(
 		onUpdate: (cs: KeyChord[]) => void,
@@ -408,30 +408,24 @@ class CaptureChord {
 		this.onUpdate = onUpdate;
 		this.onComplete = onComplete;
 
-		this.handleKeydown = (event: KeyboardEvent) => {
-			event.preventDefault();
-			event.stopPropagation();
-
+		this.chordListener = new ChordListener((c: KeyChord): boolean => {
 			if (
-				event.altKey === false &&
-				event.ctrlKey === false &&
-				event.shiftKey === false &&
-				event.metaKey === false &&
-				(event.code === "Enter" || event.code === "Escape")
+				!c.alt &&
+				!c.ctrl &&
+				!c.shift &&
+				!c.meta &&
+				(c.key === "Enter" || c.key === "Escape")
 			) {
-				this.cancel();
-				if (event.code === "Enter") {
+				this.destruct();
+				if (c.key === "Enter") {
 					this.onComplete(this.chords);
 				}
-				return;
+				return true;
 			}
 
-			if (isModifier(event.code)) {
-				return;
-			}
-			this.pushChord(new KeyChord(event));
-		};
-		document.addEventListener("keydown", this.handleKeydown);
+			this.pushChord(c);
+			return true;
+		});
 	}
 
 	pushChord = (c: KeyChord) => {
@@ -439,7 +433,7 @@ class CaptureChord {
 		this.onUpdate(this.chords);
 	};
 
-	cancel = () => {
-		document.removeEventListener("keydown", this.handleKeydown);
+	destruct = () => {
+		this.chordListener.destruct();
 	};
 }
