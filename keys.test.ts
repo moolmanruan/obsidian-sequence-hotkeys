@@ -40,11 +40,28 @@ describe("KeyChord", () => {
 		expect(kc.meta).toEqual(false);
 		expect(kc.alt).toEqual(false);
 		expect(kc.key).toBe("Two");
+
+		kc = new KeyChord("C-");
+		expect(kc.ctrl).toEqual(true);
+		expect(kc.key).toBe("");
+
+		kc = new KeyChord("S-");
+		expect(kc.shift).toEqual(true);
+		expect(kc.key).toBe("");
+
+		kc = new KeyChord("M-");
+		expect(kc.meta).toEqual(true);
+		expect(kc.key).toBe("");
+
+		kc = new KeyChord("A-");
+		expect(kc.alt).toEqual(true);
+		expect(kc.key).toBe("");
 	});
 
 	test("serialize", () => {
 		expect(new KeyChord("C-KeyA").serialize()).toEqual("C-KeyA");
 		expect(new KeyChord("C-M-S-KeyG").serialize()).toEqual("M-C-S-KeyG");
+		expect(new KeyChord("S-").serialize()).toEqual("S-");
 	});
 });
 
