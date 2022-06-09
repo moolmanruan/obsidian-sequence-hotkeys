@@ -99,6 +99,9 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		this.addSettingTab(new SequenceHotkeysSettingTab(this.app, this));
 
 		this.chordListener = new ChordListener((chord: KeyChord) => {
+			if (!!(this.app as any).setting.activeTab) {
+				return false;
+			}
 			this.statusBar.setText(chord.toString());
 			return this.hotkeyManager.handleChordPress(chord);
 		});
@@ -134,18 +137,6 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		this.saveListener = fn;
 	};
 
-	keyDownHandler = (event: KeyboardEvent) => {
-		if (!!(this.app as any).setting.activeTab || isModifier(event.code)) {
-			return;
-		}
-		const chord = new KeyChord(event);
-		this.statusBar.setText(chord.toString());
-		if (this.hotkeyManager.handleChordPress(chord)) {
-			// Prevent default if used
-			event.preventDefault();
-		}
-	};
-
 	addHotkey = (commandId: string, chords: KeyChord[] | undefined) => {
 		if (chords?.length) {
 			this.settings.hotkeys = [
@@ -170,7 +161,6 @@ export default class SequenceHotkeysPlugin extends Plugin {
 
 class SequenceHotkeysSettingTab extends PluginSettingTab {
 	plugin: SequenceHotkeysPlugin;
-	chords: Array<KeyChord>;
 	filter: string;
 	// A list of the CommandSetting elements
 	commandSettingEls: Array<CommandSetting>;
