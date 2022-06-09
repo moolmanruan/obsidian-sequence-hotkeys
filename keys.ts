@@ -132,7 +132,7 @@ export class KeyChord {
 	ctrl: boolean = false;
 	alt: boolean = false;
 	shift: boolean = false;
-	key: string; // KeyboardEvent.code
+	key: string = ""; // KeyboardEvent.code
 
 	constructor(input: KeyboardEvent | string) {
 		// If one checks `input instanceof KeyboardEvent` the jest tests fail
@@ -157,7 +157,9 @@ export class KeyChord {
 				}
 			});
 		} else {
-			this.key = input.code;
+			if (!isModifier(input.code)) {
+				this.key = input.code;
+			}
 			this.meta = input.metaKey;
 			this.ctrl = input.ctrlKey;
 			this.alt = input.altKey;

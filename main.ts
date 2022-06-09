@@ -17,6 +17,7 @@ import {
 	keySequencePartiallyEqual,
 } from "keys";
 import { HotkeyManager } from "hotkey-manager";
+import { ChordListener } from "./src/chord_listener";
 
 interface Hotkey {
 	command: string;
@@ -82,6 +83,7 @@ export default class SequenceHotkeysPlugin extends Plugin {
 	statusBar: HTMLElement;
 	saveListener: ((s: SequenceHotkeysSettings) => void) | undefined;
 	hotkeyManager: HotkeyManager;
+	chordListener: ChordListener;
 
 	async onload() {
 		this.hotkeyManager = new HotkeyManager((id: string) =>
@@ -96,10 +98,15 @@ export default class SequenceHotkeysPlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SequenceHotkeysSettingTab(this.app, this));
 
-		this.registerDomEvent(document, "keydown", this.keyDownHandler);
+		this.chordListener = new ChordListener((chord: KeyChord) => {
+			this.statusBar.setText(chord.toString());
+			return this.hotkeyManager.handleChordPress(chord);
+		});
 	}
 
-	onunload() {}
+	onunload() {
+		this.chordListener.destruct();
+	}
 
 	_settingsUpdated = () => {
 		this.saveSettings();
