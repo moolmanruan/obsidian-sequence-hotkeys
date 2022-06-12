@@ -299,7 +299,7 @@ class CommandSetting extends Setting {
 		for (const hotkey of hotkeys) {
 			const warnClass = !!hotkey.warning ? " has-conflict" : "";
 			const hotkeySpan = hotkeyDiv.createSpan({
-				cls: "setting-hotkey mod-empty" + warnClass,
+				cls: "setting-hotkey" + warnClass,
 				attr: { "aria-label": hotkey.warning },
 			});
 			const hotkeySpanText = hotkeySpan.createSpan({
@@ -323,7 +323,7 @@ class CommandSetting extends Setting {
 
 		addBtn.onClickEvent(() => {
 			const newHotkeySpan = hotkeyDiv.createSpan({
-				cls: "setting-hotkey mod-empty",
+				cls: "setting-hotkey",
 			});
 			const newHotkeySpanText = newHotkeySpan.createSpan({
 				text: "Press hotkey...",
@@ -340,7 +340,6 @@ class CommandSetting extends Setting {
 			const chordCapturer = new CaptureChord(onUpdate, onComplete);
 			this.setCancelCapture(chordCapturer.destruct);
 
-			newHotkeySpan.removeClass("mod-empty");
 			newHotkeySpan.addClass("mod-active");
 
 			addBtn.hide();
