@@ -24,15 +24,26 @@ export class HotkeyManager {
 		this.currentSequence = [];
 	}
 
-	handleChordPress = (chord: KeyChord): boolean => {
-		this.currentSequence.push(chord);
-
+	_matchingHotheys = (): Registration[] => {
 		const css = this.currentSequence.map((c) => c.toString());
-		let hotkeys = this.registeredHotkeys.filter((r: Registration) => {
+		return this.registeredHotkeys.filter((r: Registration) => {
 			const rcs = r.chords.map((c) => c.toString());
 			return arrayStartsWith(rcs, css);
 		});
+	};
 
+	// return: prevent key propagation
+	handleChordPress = (chord: KeyChord): boolean => {
+		this.currentSequence.push(chord);
+		let hotkeys = this._matchingHotheys();
+
+		// If the new has no matches, try matching with a sequence starting with the new chord
+		if (hotkeys.length === 0 && this.currentSequence.length > 1) {
+			this.currentSequence = [chord];
+			hotkeys = this._matchingHotheys();
+		}
+
+		// If there are no matches at this point, clear the sequence and let the key through
 		if (hotkeys.length === 0) {
 			this.currentSequence = [];
 			return false;
@@ -41,7 +52,7 @@ export class HotkeyManager {
 		let exactMatch = hotkeys.find((r: Registration) => {
 			// Current chord is already a subset of all hotkeys after filtering
 			// above, so if length matches, it's an exact match.
-			return css.length === r.chords.length;
+			return this.currentSequence.length === r.chords.length;
 		});
 		if (exactMatch) {
 			this.currentSequence = [];
