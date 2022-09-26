@@ -80,7 +80,6 @@ const hotkeysForCommand = (s: SequenceHotkeysSettings, id: string): Hotkey[] =>
 
 export default class SequenceHotkeysPlugin extends Plugin {
 	settings: SequenceHotkeysSettings;
-	statusBar: HTMLElement;
 	saveListener: ((s: SequenceHotkeysSettings) => void) | undefined;
 	hotkeyManager: HotkeyManager;
 	chordListener: ChordListener;
@@ -92,9 +91,6 @@ export default class SequenceHotkeysPlugin extends Plugin {
 
 		await this.loadSettings();
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		this.statusBar = this.addStatusBarItem();
-
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SequenceHotkeysSettingTab(this.app, this));
 
@@ -102,7 +98,6 @@ export default class SequenceHotkeysPlugin extends Plugin {
 			if (!!(this.app as any).setting.activeTab) {
 				return false;
 			}
-			this.statusBar.setText(chord.toString());
 			return this.hotkeyManager.handleChordPress(chord);
 		});
 	}
