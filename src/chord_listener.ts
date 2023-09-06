@@ -27,8 +27,8 @@ export class ChordListener {
 			// of modifiers only, handle it now.
 			this.chordPress(event);
 		};
-		document.addEventListener("keydown", this.handleKeydown);
-		document.addEventListener("keyup", this.handleKeyup);
+		document.addEventListener("keydown", this.handleKeydown, { capture: true });
+		document.addEventListener("keyup", this.handleKeyup, { capture: true });
 	}
 
 	chordPress = (event: KeyboardEvent) => {
@@ -42,7 +42,7 @@ export class ChordListener {
 	};
 
 	destruct = () => {
-		document.removeEventListener("keydown", this.handleKeydown);
-		document.removeEventListener("keyup", this.handleKeyup);
+		document.removeEventListener("keydown", this.handleKeydown, { capture: true });
+		document.removeEventListener("keyup", this.handleKeyup, { capture: true });
 	};
 }
