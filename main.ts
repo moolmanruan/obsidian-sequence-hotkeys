@@ -10,7 +10,6 @@ import {
 } from "obsidian";
 
 import {
-	isModifier,
 	KeyChord,
 	keySequenceEqual,
 	codeToString,
@@ -159,6 +158,8 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 	filter: string;
 	// A list of the CommandSetting elements
 	commandSettingEls: Array<CommandSetting>;
+	// The element showing how many shortcuts are visible
+	descEl: HTMLDivElement;
 
 	constructor(app: App, plugin: SequenceHotkeysPlugin) {
 		super(app, plugin);
@@ -166,6 +167,16 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 		this.filter = "";
 		this.commandSettingEls = new Array<CommandSetting>();
 	}
+
+	updateDescription = () => {
+		this.descEl.setText(
+			`Showing ${
+				this.commandSettingEls.filter((e: CommandSetting) =>
+					e.settingEl.isShown()
+				).length
+			} hotkeys.`
+		);
+	};
 
 	setFilter = (s: string) => {
 		this.filter = s;
@@ -179,6 +190,8 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 				)
 			)
 		);
+
+		this.updateDescription();
 	};
 
 	// Run every time the settings page is closed
@@ -191,12 +204,18 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		let searchEl: SearchComponent;
-		new Setting(containerEl).addSearch((s: SearchComponent) => {
-			searchEl = s;
-			s.setPlaceholder("Filter...");
-		});
+		const searchBar = new Setting(containerEl);
+		const title = searchBar.infoEl.createDiv();
+		title.addClass("setting-item-name");
+		title.setText("Search hotkeys");
+		this.descEl = searchBar.infoEl.createDiv();
+		this.descEl.addClass("setting-item-description");
+		const searchEl = new SearchComponent(searchBar.controlEl);
+		searchEl.setPlaceholder("Filter...");
 		searchEl.onChange(this.setFilter);
+
+		const spacer = containerEl.createDiv();
+		spacer.addClass("setting-filter-container");
 
 		const commandsContainer = containerEl.createDiv();
 
@@ -239,6 +258,9 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 
 		// Update the command with the current setting's hotkeys
 		updateCommands(this.plugin.settings);
+
+		// Ensure the description is updated appropriately
+		this.updateDescription();
 
 		// Focus on the search input
 		searchEl.inputEl.focus();
