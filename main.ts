@@ -7,6 +7,8 @@ import {
 	setIcon,
 	Setting,
 	Menu,
+	ButtonComponent,
+	MenuItem,
 } from "obsidian";
 
 import {
@@ -17,7 +19,7 @@ import {
 } from "keys";
 import { HotkeyManager } from "hotkey-manager";
 import { ChordListener } from "./src/chord_listener";
-import { changeFilter, store } from "./store";
+import { changeFilter, changeFilterOption, FilterOption, store } from "./store";
 
 interface Hotkey {
 	command: string;
@@ -161,6 +163,9 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 	// The element showing how many shortcuts are visible
 	descEl: HTMLDivElement;
 
+	filterOptionDiv: HTMLDivElement;
+	menuItems: { [id: string]: MenuItem } = {};
+
 	// Callback to unsubscribe from the redux store
 	unsubscribe: () => void;
 
@@ -170,18 +175,37 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 		this.commandSettingEls = new Array<CommandSetting>();
 	}
 
+	hasCommands = (cs: CommandSetting) => {
+		const hotkeys = hotkeysForCommand(
+			this.plugin.settings,
+			cs.getCommand().id
+		);
+		return hotkeys.length > 0;
+	};
+
 	render = () => {
 		const state = store.getState();
 
+		this.filterOptionDiv.setText(state.filterOption);
+
+		Object.keys(this.menuItems).forEach((k) => {
+			this.menuItems[k].setActive(k === state.filterOption);
+		});
+
 		// Hide/show the command settings based on the filter value.
 		const filterParts = state.filter.toLowerCase().split(" ");
-		this.commandSettingEls.map((cs: CommandSetting) =>
-			cs.settingEl.toggle(
-				filterParts.every((part) =>
-					cs.getCommand().name.toLowerCase().contains(part)
-				)
-			)
-		);
+		this.commandSettingEls.map((cs: CommandSetting) => {
+			const matchesFilter = filterParts.every((part) =>
+				cs.getCommand().name.toLowerCase().contains(part)
+			);
+			let assignedFilter = true;
+			if (state.filterOption === "Assigned") {
+				assignedFilter = this.hasCommands(cs);
+			} else if (state.filterOption === "Unassigned") {
+				assignedFilter = !this.hasCommands(cs);
+			}
+			cs.settingEl.toggle(matchesFilter && assignedFilter);
+		});
 
 		this.updateDescription();
 	};
@@ -215,6 +239,27 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 		title.setText("Search hotkeys");
 		this.descEl = searchBar.infoEl.createDiv();
 		this.descEl.addClass("setting-item-description");
+
+		const filterMenu = new Menu();
+		["All", "Assigned", "Unassigned"].forEach((o: FilterOption) => {
+			filterMenu.addItem((i: MenuItem) => {
+				i.setTitle(o);
+				i.onClick(() => {
+					store.dispatch(changeFilterOption(o));
+				});
+				this.menuItems[o] = i;
+			});
+		});
+
+		this.filterOptionDiv = searchBar.controlEl.createDiv();
+		this.filterOptionDiv.addClass("setting-item-description");
+		const filterButton = new ButtonComponent(searchBar.controlEl);
+		filterButton.setClass("clickable-icon");
+		filterButton.setIcon("lucide-filter");
+		filterButton.onClick((e: MouseEvent) => {
+			filterMenu.showAtPosition({ x: e.pageX, y: e.pageY });
+		});
+
 		const searchEl = new SearchComponent(searchBar.controlEl);
 		searchEl.setPlaceholder("Filter...");
 		searchEl.onChange((s: string) => store.dispatch(changeFilter(s)));
