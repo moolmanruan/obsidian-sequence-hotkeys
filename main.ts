@@ -17,6 +17,7 @@ import {
 } from "keys";
 import { HotkeyManager } from "hotkey-manager";
 import { ChordListener } from "./src/chord_listener";
+import { changeFilter, store } from "./store";
 
 interface Hotkey {
 	command: string;
@@ -155,34 +156,25 @@ export default class SequenceHotkeysPlugin extends Plugin {
 
 class SequenceHotkeysSettingTab extends PluginSettingTab {
 	plugin: SequenceHotkeysPlugin;
-	filter: string;
 	// A list of the CommandSetting elements
 	commandSettingEls: Array<CommandSetting>;
 	// The element showing how many shortcuts are visible
 	descEl: HTMLDivElement;
 
+	// Callback to unsubscribe from the redux store
+	unsubscribe: () => void;
+
 	constructor(app: App, plugin: SequenceHotkeysPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.filter = "";
 		this.commandSettingEls = new Array<CommandSetting>();
 	}
 
-	updateDescription = () => {
-		this.descEl.setText(
-			`Showing ${
-				this.commandSettingEls.filter((e: CommandSetting) =>
-					e.settingEl.isShown()
-				).length
-			} hotkeys.`
-		);
-	};
-
-	setFilter = (s: string) => {
-		this.filter = s;
+	render = () => {
+		const state = store.getState();
 
 		// Hide/show the command settings based on the filter value.
-		const filterParts = this.filter.toLowerCase().split(" ");
+		const filterParts = state.filter.toLowerCase().split(" ");
 		this.commandSettingEls.map((cs: CommandSetting) =>
 			cs.settingEl.toggle(
 				filterParts.every((part) =>
@@ -194,13 +186,26 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 		this.updateDescription();
 	};
 
+	updateDescription = () => {
+		this.descEl.setText(
+			`Showing ${
+				this.commandSettingEls.filter((e: CommandSetting) =>
+					e.settingEl.isShown()
+				).length
+			} hotkeys.`
+		);
+	};
+
 	// Run every time the settings page is closed
 	hide(): void {
+		this.unsubscribe();
 		this.commandSettingEls.map((s) => s.hide());
 	}
 
 	// Run every time the settings page is opened
 	display(): void {
+		this.unsubscribe = store.subscribe(this.render);
+
 		const { containerEl } = this;
 		containerEl.empty();
 
@@ -212,7 +217,7 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 		this.descEl.addClass("setting-item-description");
 		const searchEl = new SearchComponent(searchBar.controlEl);
 		searchEl.setPlaceholder("Filter...");
-		searchEl.onChange(this.setFilter);
+		searchEl.onChange((s: string) => store.dispatch(changeFilter(s)));
 
 		const spacer = containerEl.createDiv();
 		spacer.addClass("setting-filter-container");
@@ -259,8 +264,7 @@ class SequenceHotkeysSettingTab extends PluginSettingTab {
 		// Update the command with the current setting's hotkeys
 		updateCommands(this.plugin.settings);
 
-		// Ensure the description is updated appropriately
-		this.updateDescription();
+		this.render();
 
 		// Focus on the search input
 		searchEl.inputEl.focus();
