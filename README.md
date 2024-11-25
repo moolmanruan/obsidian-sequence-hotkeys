@@ -13,3 +13,4 @@ To create a hotkey for a command click the set hotkey button on the right-hand s
 # Known Issues
 
 -   If you have hotkey set in the default hotkeys, for example ⌘F, and you set a shortcut in the plugin using ⌘F ⌘W, for example, the plugin shortcut won't trigger.
+-   Doesn't support the use of different keyboard layouts, like Dvorak.
