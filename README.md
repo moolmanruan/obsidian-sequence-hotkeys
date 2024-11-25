@@ -2,6 +2,8 @@
 
 This plugin allows you to use a sequences of chords for shortcuts instead of single chords.
 
+*NOTE*: I don't use Obsidian so much anymore, so I probably won't be working on the repo much going forward.
+
 ## Creating a hotkey
 
 You can modify your hotkeys under `Plugin Options > Sequence Hotkeys` or `Options > Community plugings > Sequence Hotkeys > Options`.
